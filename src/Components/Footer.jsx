@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Gavel, Facebook, Twitter, Instagram } from 'lucide-react';
-import logo from '../Assets/logo.png';
+import logo from '../assets/logo.png';
 
 const Footer = () => {
   return (

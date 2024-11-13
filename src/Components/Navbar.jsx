@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Gavel, Search, Bell, UserCircle, ShoppingCart } from 'lucide-react';
-import logo from '../Assets/logo.png';
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
   return (
