@@ -35,13 +35,13 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
             <address className="text-secondary-300 text-sm not-italic">
-              <p>Email: info@auctionsite.com</p>
-              <p>Phone: +1 (123) 456-7890</p>
+              <p>Email: vivans720@gmail.com</p>
+              <p>Phone: +91 7982943736</p>
             </address>
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-secondary-700 text-center text-secondary-400 text-sm">
-          <p>&copy; {new Date().getFullYear()} Online Auction Site. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} BidBazaar. All rights reserved.</p>
         </div>
       </div>
     </footer>
