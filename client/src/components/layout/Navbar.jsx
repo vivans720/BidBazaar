@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../assets/logo.png';
 
 const navigation = [
   { name: 'Home', href: '/', public: true },
@@ -41,8 +42,13 @@ const Navbar = () => {
               </div>
               <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
-                  <Link to="/" className="text-white font-bold text-xl">
-                    Auction Site
+                  <Link to="/" className="flex items-center">
+                    <img 
+                      src={logo} 
+                      alt="BidBazaar Logo" 
+                      className="h-8 w-auto mr-2" 
+                    />
+                    <span className="text-white font-bold text-xl">BidBazaar</span>
                   </Link>
                 </div>
                 <div className="hidden sm:ml-6 sm:block">
