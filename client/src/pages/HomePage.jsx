@@ -19,7 +19,7 @@ const HomePage = () => {
             Online Auction Site
           </h1>
           <p className="mt-6 text-xl text-gray-300 max-w-3xl">
-            Discover unique handcrafted items from artisans around the world. Bid on exclusive products and support local creators.
+            Discover unique handcrafted items from artisans around the country. Bid on exclusive products and support local creators.
           </p>
           <div className="mt-10 flex space-x-4">
             <Link
