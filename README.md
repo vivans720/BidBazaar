@@ -1,8 +1,8 @@
-# Online Bidding/Auction Site
+# Online Bidding/Auction Site - BidBazaar
 
 A MERN stack application for an online bidding/auction platform.
 
-## User Management Module
+## 1.User Management Module
 
 The first module implemented includes:
 
