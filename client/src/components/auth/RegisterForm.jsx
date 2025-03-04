@@ -100,9 +100,9 @@ const RegisterForm = () => {
   return (
     <div className="max-w-md w-full space-y-8">
       <div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        {/* <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create your account
-        </h2>
+        </h2> */}
       </div>
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         {state.error && (
@@ -112,7 +112,7 @@ const RegisterForm = () => {
         )}
         <div className="rounded-md shadow-sm -space-y-px">
           <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
               Full Name
             </label>
             <input
@@ -133,7 +133,7 @@ const RegisterForm = () => {
             )}
           </div>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email address
             </label>
             <input
@@ -142,7 +142,7 @@ const RegisterForm = () => {
               type="email"
               autoComplete="email"
               required
-              className={`appearance-none relative block w-full px-3 py-2 border ${
+              className={`appearance-none relative block w-full px-3 py-2 border mb-2 ${
                 formErrors.email ? 'border-red-300' : 'border-gray-300'
               } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
               placeholder="Email address"
@@ -154,7 +154,7 @@ const RegisterForm = () => {
             )}
           </div>
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Password
             </label>
             <input
@@ -163,7 +163,7 @@ const RegisterForm = () => {
               type="password"
               autoComplete="new-password"
               required
-              className={`appearance-none relative block w-full px-3 py-2 border ${
+              className={`appearance-none relative block w-full px-3 py-2 border mb-2 ${
                 formErrors.password ? 'border-red-300' : 'border-gray-300'
               } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
               placeholder="Password"
@@ -175,7 +175,7 @@ const RegisterForm = () => {
             )}
           </div>
           <div className="mb-4">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password
             </label>
             <input
@@ -184,7 +184,7 @@ const RegisterForm = () => {
               type="password"
               autoComplete="new-password"
               required
-              className={`appearance-none relative block w-full px-3 py-2 border ${
+              className={`appearance-none relative block w-full px-3 py-2 border mb-2 ${
                 formErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
               } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
               placeholder="Confirm Password"
@@ -196,7 +196,7 @@ const RegisterForm = () => {
             )}
           </div>
           <div className="mb-4">
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               I want to
             </label>
             <select
