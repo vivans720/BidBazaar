@@ -79,8 +79,21 @@ const RegisterForm = () => {
     clearErrors();
 
     if (validateForm()) {
-      const { name, email, password, role } = formData;
-      await register({ name, email, password, role });
+      try {
+        const { name, email, password, role } = formData;
+        console.log('Submitting registration form with role:', role);
+        
+        await register({ name, email, password, role });
+        
+        // If we get here, registration was successful
+        console.log('Registration successful');
+        
+      } catch (error) {
+        console.error('Registration error in component:', error);
+        // Error is already handled by the context
+      }
+    } else {
+      console.log('Form validation failed');
     }
   };
 
