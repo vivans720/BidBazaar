@@ -1,11 +1,15 @@
 import axios from 'axios';
 
+// Get the base URL from environment variables
+const baseURL = import.meta.env.MODE === 'production' 
+  ? import.meta.env.VITE_API_URL 
+  : '/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
-  },
-  withCredentials: true
+  }
 });
 
 // Add a request interceptor
@@ -26,9 +30,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 405) {
-      console.error('Method not allowed. Please check API endpoint configuration.');
-    }
+    console.error('API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config
+    });
     return Promise.reject(error);
   }
 );
