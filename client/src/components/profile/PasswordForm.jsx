@@ -78,7 +78,7 @@ const PasswordForm = () => {
   };
   
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg max-w-md mx-auto">
       <div className="px-4 py-5 sm:px-6">
         <h3 className="text-lg leading-6 font-medium text-gray-900">Change Password</h3>
         <p className="mt-1 max-w-2xl text-sm text-gray-500">Update your account password</p>
@@ -106,7 +106,7 @@ const PasswordForm = () => {
                   id="currentPassword"
                   value={formData.currentPassword}
                   onChange={handleChange}
-                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-2 border-black rounded-md ${
                     formErrors.currentPassword ? 'border-red-300' : ''
                   }`}
                 />
@@ -127,7 +127,7 @@ const PasswordForm = () => {
                   id="newPassword"
                   value={formData.newPassword}
                   onChange={handleChange}
-                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-2 border-black rounded-md ${
                     formErrors.newPassword ? 'border-red-300' : ''
                   }`}
                 />
@@ -148,7 +148,7 @@ const PasswordForm = () => {
                   id="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 rounded-md ${
+                  className={`shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-2 border-black rounded-md ${
                     formErrors.confirmPassword ? 'border-red-300' : ''
                   }`}
                 />
