@@ -165,29 +165,59 @@ exports.getMe = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    // Remove password from update if it exists
-    if (req.body.password) {
-      delete req.body.password;
-    }
-    
-    // Don't allow role updates from this endpoint
-    if (req.body.role) {
-      delete req.body.role;
+    const { name, email, phone, address } = req.body;
+
+    // Basic validation
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and email are required'
+      });
     }
 
-    const user = await User.findByIdAndUpdate(req.user.id, req.body, {
-      new: true,
-      runValidators: true
-    }).select('-password');
+    // Check if email is already taken by another user
+    const existingUser = await User.findOne({ email, _id: { $ne: req.user.id } });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is already in use'
+      });
+    }
+
+    // Remove password and role from update if they exist
+    const updateData = {
+      name,
+      email,
+      phone,
+      address
+    };
+
+    // Update user
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      updateData,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
 
     res.status(200).json({
       success: true,
       data: user
     });
   } catch (error) {
+    console.error('Profile update error:', error);
     res.status(500).json({
       success: false,
-      error: 'Server Error'
+      error: error.message || 'Server Error'
     });
   }
 };
