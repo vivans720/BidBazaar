@@ -41,14 +41,31 @@ const ProfileForm = () => {
     e.preventDefault();
     
     try {
-      const result = await updateProfile(formData);
-      if (result.success) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
-      } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to update profile' });
-      }
+      // Transform the form data to match the expected API structure
+      const profileData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: {
+          street: formData.street,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country
+        }
+      };
+
+      console.log('Submitting profile update:', profileData);
+      await updateProfile(profileData);
+      
+      // Success message is handled by the context through toast
+      
     } catch (error) {
-      setMessage({ type: 'error', text: 'An error occurred. Please try again.' });
+      console.error('Profile update error:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.error || error.message || 'Failed to update profile. Please try again.' 
+      });
     }
   };
 
