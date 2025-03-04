@@ -146,21 +146,40 @@ export const AuthProvider = ({ children }) => {
           }
           
           dispatch({ type: 'USER_LOADED', payload: userRes.data.data });
+          toast.success('Registration successful!');
         } catch (userErr) {
-          console.error('Error loading user after registration:', userErr.response?.data || userErr);
+          console.error('Error loading user after registration:', userErr);
           dispatch({ type: 'AUTH_ERROR' });
-          throw new Error('Failed to load user data after registration');
+          toast.error('Registration successful but failed to load user data. Please try logging in.');
         }
       } else {
         throw new Error(res.data.error || 'Registration failed');
       }
     } catch (err) {
-      console.error('Registration error:', err.response?.data || err.message);
+      console.error('Registration error:', err);
       setAuthToken(null);
+      
+      let errorMessage = 'Registration failed';
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage = err.response.data?.error || err.response.data?.message || 'Server error occurred';
+        console.error('Server response:', err.response.data);
+      } else if (err.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response from server. Please check your internet connection.';
+        console.error('No response received:', err.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage = err.message || 'An error occurred during registration';
+        console.error('Error setting up request:', err.message);
+      }
+      
       dispatch({
         type: 'REGISTER_FAIL',
-        payload: err.response?.data?.error || err.message || 'Registration failed'
+        payload: errorMessage
       });
+      toast.error(errorMessage);
       throw err;
     }
   };
