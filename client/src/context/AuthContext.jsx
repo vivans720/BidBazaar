@@ -1,6 +1,6 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../utils/api';
 
 // Initial state
 const initialState = {
@@ -99,10 +99,8 @@ export const AuthProvider = ({ children }) => {
   // Set auth token
   const setAuthToken = (token) => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
     } else {
-      delete axios.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
     }
   };
@@ -111,10 +109,9 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     const token = localStorage.getItem('token');
     if (token) {
-      setAuthToken(token);
       try {
         console.log('Loading user data with token:', token);
-        const res = await axios.get('/api/users/me');
+        const res = await api.get('/users/me');
         console.log('User data loaded:', res.data);
         dispatch({ type: 'USER_LOADED', payload: res.data.data });
       } catch (err) {
@@ -130,13 +127,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'AUTH_LOADING' });
       console.log('Registering user with data:', userData);
       
-      const config = {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-      
-      const res = await axios.post('/api/auth/register', userData, config);
+      const res = await api.post('/auth/register', userData);
       console.log('Registration response:', res.data);
       
       if (res.data.success) {
@@ -146,7 +137,7 @@ export const AuthProvider = ({ children }) => {
         
         // Load user data immediately after successful registration
         try {
-          const userRes = await axios.get('/api/users/me');
+          const userRes = await api.get('/users/me');
           console.log('User data loaded after registration:', userRes.data);
           
           if (!userRes.data.data.role) {
@@ -170,7 +161,7 @@ export const AuthProvider = ({ children }) => {
         type: 'REGISTER_FAIL',
         payload: err.response?.data?.error || err.message || 'Registration failed'
       });
-      throw err; // Re-throw to handle in the component
+      throw err;
     }
   };
 
@@ -180,7 +171,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'AUTH_LOADING' });
       console.log('Attempting login with credentials:', credentials);
       
-      const res = await axios.post('/api/auth/login', credentials);
+      const res = await api.post('/auth/login', credentials);
       console.log('Login response:', res.data);
       
       const token = res.data.token;
@@ -188,18 +179,11 @@ export const AuthProvider = ({ children }) => {
       
       dispatch({ type: 'LOGIN_SUCCESS', payload: token });
       
-      toast.success('Signed in successfully!', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.success('Signed in successfully!');
       
       // Load user data immediately after successful login
       try {
-        const userRes = await axios.get('/api/users/me');
+        const userRes = await api.get('/users/me');
         console.log('User data loaded:', userRes.data);
         
         if (!userRes.data.data.role) {
@@ -220,14 +204,7 @@ export const AuthProvider = ({ children }) => {
         type: 'LOGIN_FAIL',
         payload: err.response?.data?.error || 'Login failed'
       });
-      toast.error(err.response?.data?.error || 'Login failed', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.error(err.response?.data?.error || 'Login failed');
     }
   };
 
@@ -239,7 +216,7 @@ export const AuthProvider = ({ children }) => {
   // Update password
   const updatePassword = async (passwordData) => {
     try {
-      await axios.put('/api/auth/updatepassword', passwordData);
+      await api.put('/auth/updatepassword', passwordData);
       dispatch({ type: 'UPDATE_PASSWORD_SUCCESS' });
     } catch (err) {
       dispatch({
@@ -255,13 +232,7 @@ export const AuthProvider = ({ children }) => {
       console.log('Updating profile with data:', profileData);
       dispatch({ type: 'AUTH_LOADING' });
 
-      const config = {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-
-      const res = await axios.put('/api/users/updateprofile', profileData, config);
+      const res = await api.put('/users/updateprofile', profileData);
       console.log('Profile update response:', res.data);
 
       if (res.data.success) {
