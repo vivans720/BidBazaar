@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AdminDashboard from '../components/dashboard/AdminDashboard';
@@ -23,14 +23,24 @@ const DashboardPage = () => {
     return <Navigate to="/login" />;
   }
 
+  console.log('Current user:', user);
+
   const renderDashboard = () => {
-    switch (user?.role) {
+    console.log('Rendering dashboard for role:', user?.role);
+    
+    if (!user) {
+      return <div>Loading user data...</div>;
+    }
+
+    switch (user.role.toLowerCase()) {
       case 'admin':
         return <AdminDashboard />;
       case 'vendor':
         return <VendorDashboard />;
       case 'buyer':
+        return <BuyerDashboard />;
       default:
+        console.log('Unknown role:', user.role);
         return <BuyerDashboard />;
     }
   };
@@ -38,7 +48,16 @@ const DashboardPage = () => {
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <div className="px-4 py-6 sm:px-0">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+          <p className="mt-2 text-lg text-gray-600">
+            {user?.role === 'vendor' 
+              ? "Manage your listings and track your sales"
+              : user?.role === 'admin'
+              ? "Monitor site activity and manage users"
+              : "Browse auctions and manage your bids"}
+          </p>
+        </div>
         {renderDashboard()}
       </div>
     </div>
