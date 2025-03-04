@@ -85,8 +85,11 @@ const RegisterForm = () => {
         
         await register({ name, email, password, role });
         
-        // If we get here, registration was successful
-        console.log('Registration successful');
+        // Wait for user data to be loaded before navigating
+        if (state.isAuthenticated && state.user) {
+          console.log('Registration successful, navigating to dashboard');
+          navigate('/dashboard');
+        }
         
       } catch (error) {
         console.error('Registration error in component:', error);
