@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
   // Register user
   const register = async (userData) => {
     try {
+      dispatch({ type: 'AUTH_LOADING' });
       console.log('Registering user with data:', userData);
       
       const config = {
@@ -139,13 +140,32 @@ export const AuthProvider = ({ children }) => {
       console.log('Registration response:', res.data);
       
       if (res.data.success) {
-        dispatch({ type: 'REGISTER_SUCCESS', payload: res.data.token });
-        await loadUser();
+        const token = res.data.token;
+        setAuthToken(token);
+        dispatch({ type: 'REGISTER_SUCCESS', payload: token });
+        
+        // Load user data immediately after successful registration
+        try {
+          const userRes = await axios.get('/api/users/me');
+          console.log('User data loaded after registration:', userRes.data);
+          
+          if (!userRes.data.data.role) {
+            console.error('No role found in user data:', userRes.data);
+            throw new Error('User role not found');
+          }
+          
+          dispatch({ type: 'USER_LOADED', payload: userRes.data.data });
+        } catch (userErr) {
+          console.error('Error loading user after registration:', userErr.response?.data || userErr);
+          dispatch({ type: 'AUTH_ERROR' });
+          throw new Error('Failed to load user data after registration');
+        }
       } else {
         throw new Error(res.data.error || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration error:', err.response?.data || err.message);
+      setAuthToken(null);
       dispatch({
         type: 'REGISTER_FAIL',
         payload: err.response?.data?.error || err.message || 'Registration failed'
