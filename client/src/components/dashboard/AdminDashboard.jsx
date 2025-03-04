@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { state } = useAuth();
+  const { user: currentUser } = state;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -22,10 +25,15 @@ const AdminDashboard = () => {
   }, []);
 
   const handleDeleteUser = async (userId) => {
+    if (userId === currentUser._id) {
+      setError("You cannot delete your own admin account");
+      return;
+    }
+
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         await axios.delete(`/api/users/${userId}`);
-        setUsers(users.filter(user => user.id !== userId));
+        setUsers(users.filter(user => user._id !== userId));
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to delete user');
       }
@@ -84,7 +92,7 @@ const AdminDashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user._id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{user.name}</div>
                     </td>
@@ -108,12 +116,16 @@ const AdminDashboard = () => {
                       {user.phone || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                      {user._id === currentUser._id ? (
+                        <span className="text-gray-400 cursor-not-allowed">Cannot Delete</span>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
