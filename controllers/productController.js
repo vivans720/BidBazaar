@@ -50,8 +50,10 @@ exports.getProducts = async (req, res) => {
     if (status) {
       query.status = status;
     } else {
-      // By default, show only active products
-      query.status = 'active';
+      // By default, show only active products for public viewing
+      if (!req.user || req.user.role !== 'admin') {
+        query.status = 'active';
+      }
     }
 
     // Sorting
@@ -106,6 +108,14 @@ exports.getProduct = async (req, res) => {
     const product = await Product.findById(req.params.id).populate('vendor', 'name');
 
     if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    // Only return active products for non-admin users
+    if (product.status !== 'active' && (!req.user || req.user.role !== 'admin')) {
       return res.status(404).json({
         success: false,
         error: 'Product not found'
@@ -246,15 +256,15 @@ exports.getVendorProducts = async (req, res) => {
 exports.reviewProduct = async (req, res) => {
   try {
     const { status, adminRemarks } = req.body;
-
+    
     if (!['active', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status'
+        error: 'Invalid status. Must be either active or rejected'
       });
     }
 
-    const product = await Product.findById(req.params.id);
+    let product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({
@@ -263,6 +273,7 @@ exports.reviewProduct = async (req, res) => {
       });
     }
 
+    // Only allow reviewing pending products
     if (product.status !== 'pending') {
       return res.status(400).json({
         success: false,
@@ -270,9 +281,11 @@ exports.reviewProduct = async (req, res) => {
       });
     }
 
-    product.status = status;
-    product.adminRemarks = adminRemarks;
-    await product.save();
+    product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { status, adminRemarks },
+      { new: true, runValidators: true }
+    );
 
     res.status(200).json({
       success: true,
@@ -284,4 +297,14 @@ exports.reviewProduct = async (req, res) => {
       error: error.message
     });
   }
+};
+
+module.exports = {
+  createProduct: exports.createProduct,
+  getProducts: exports.getProducts,
+  getProduct: exports.getProduct,
+  updateProduct: exports.updateProduct,
+  deleteProduct: exports.deleteProduct,
+  getVendorProducts: exports.getVendorProducts,
+  reviewProduct: exports.reviewProduct
 };
