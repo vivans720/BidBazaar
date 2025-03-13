@@ -33,20 +33,53 @@ const CreateProduct = () => {
     setPreviewUrls(newPreviewUrls);
   };
 
+  const uploadImages = async (files) => {
+    const uploadedImages = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      try {
+        console.log('Uploading image:', file.name);
+        const response = await api.post('/upload', formData);
+        console.log('Upload response:', response.data);
+        
+        if (!response.data.url) {
+          throw new Error('No URL received from upload service');
+        }
+        
+        uploadedImages.push({
+          url: response.data.url,
+          public_id: response.data.public_id
+        });
+      } catch (err) {
+        console.error('Error uploading image:', {
+          fileName: file.name,
+          error: err.response?.data || err.message
+        });
+        throw new Error(`Failed to upload image ${file.name}: ${err.response?.data?.error || err.message}`);
+      }
+    }
+    return uploadedImages;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // For now, we'll simulate file uploads by creating placeholder image URLs
-      // In a real implementation, you would upload these files to a server or cloud storage
-      const imageUrls = selectedFiles.map((file, index) => ({
-        url: `https://via.placeholder.com/400x300?text=Product+Image+${index + 1}`
-      }));
+      if (selectedFiles.length === 0) {
+        throw new Error('Please select at least one image');
+      }
+
+      // Upload images first
+      console.log('Starting image upload process...');
+      const uploadedImages = await uploadImages(selectedFiles);
+      console.log('Images uploaded successfully:', uploadedImages);
 
       const productData = {
         ...formData,
-        images: imageUrls
+        images: uploadedImages
       };
 
       console.log('Creating product with data:', productData);
@@ -55,7 +88,7 @@ const CreateProduct = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Error creating product:', err);
-      const errorMessage = err.response?.data?.error || 'Error creating product';
+      const errorMessage = err.response?.data?.error || err.message || 'Error creating product';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
