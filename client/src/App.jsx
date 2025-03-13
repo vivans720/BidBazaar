@@ -15,11 +15,12 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
 import ProductList from './components/products/ProductList';
 import CreateProduct from './components/products/CreateProduct';
+import ProductDetailPage from './pages/ProductDetailPage';
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <div className="flex flex-col min-h-screen">
           <Navbar />
           <main className="flex-grow">
@@ -28,11 +29,21 @@ const App = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/products" element={<ProductList />} />
+              <Route path="/products/:id" element={<ProductDetailPage />} />
               
-              <Route element={<PrivateRoute />}>
-                <Route path="/dashboard" element={<DashboardPage />} />
+              {/* Protected routes for all authenticated users */}
+              <Route element={<PrivateRoute allowedRoles={['admin', 'vendor', 'buyer']} />}>
                 <Route path="/profile" element={<ProfilePage />} />
+              </Route>
+
+              {/* Protected routes for vendors */}
+              <Route element={<PrivateRoute allowedRoles={['vendor']} />}>
                 <Route path="/products/create" element={<CreateProduct />} />
+              </Route>
+
+              {/* Protected route for the dashboard - each role sees their specific dashboard */}
+              <Route element={<PrivateRoute allowedRoles={['admin', 'vendor', 'buyer']} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
               
               <Route path="*" element={<div className="text-center py-10">Page not found</div>} />
@@ -41,8 +52,8 @@ const App = () => {
           <Footer />
         </div>
         <ToastContainer position="top-right" autoClose={5000} />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 
