@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -12,11 +13,15 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get('/api/users');
+        const res = await api.get('/users');
+        console.log('Admin users response:', res.data);
         setUsers(res.data.data);
         setLoading(false);
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to fetch users');
+        console.error('Error fetching users:', err);
+        const errorMessage = err.response?.data?.error || 'Failed to fetch users';
+        setError(errorMessage);
+        toast.error(errorMessage);
         setLoading(false);
       }
     };
@@ -27,15 +32,19 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     if (userId === currentUser._id) {
       setError("You cannot delete your own admin account");
+      toast.error("You cannot delete your own admin account");
       return;
     }
 
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`/api/users/${userId}`);
+        await api.delete(`/users/${userId}`);
         setUsers(users.filter(user => user._id !== userId));
+        toast.success('User deleted successfully');
       } catch (err) {
-        setError(err.response?.data?.error || 'Failed to delete user');
+        const errorMessage = err.response?.data?.error || 'Failed to delete user';
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     }
   };
