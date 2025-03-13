@@ -3,13 +3,11 @@ const { check } = require('express-validator');
 const {
   getUsers,
   getUser,
-  createUser,
   updateUser,
   deleteUser,
   getMe,
   updateProfile
 } = require('../controllers/userController');
-
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -31,23 +29,9 @@ router.put(
 // Admin only routes
 router.use(authorize('admin'));
 
-router
-  .route('/')
-  .get(getUsers)
-  .post(
-    [
-      check('name', 'Name is required').not().isEmpty(),
-      check('email', 'Please include a valid email').isEmail(),
-      check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
-      check('role', 'Role is required').not().isEmpty()
-    ],
-    createUser
-  );
-
-router
-  .route('/:id')
-  .get(getUser)
-  .put(updateUser)
-  .delete(deleteUser);
+router.get('/', getUsers);
+router.get('/:id', getUser);
+router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
 
 module.exports = router;
