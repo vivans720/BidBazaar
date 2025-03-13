@@ -1,15 +1,14 @@
 const express = require('express');
 const { check } = require('express-validator');
 const {
-  createProduct,
   getProducts,
   getProduct,
+  createProduct,
   updateProduct,
   deleteProduct,
   getVendorProducts,
   reviewProduct
 } = require('../controllers/productController');
-
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,47 +17,39 @@ const router = express.Router();
 router.get('/', getProducts);
 router.get('/:id', getProduct);
 
-// Protected routes
+// Protect all routes after this middleware
 router.use(protect);
 
 // Vendor routes
+router.get('/vendor/products', authorize('vendor'), getVendorProducts);
 router.post(
   '/',
   authorize('vendor'),
   [
     check('title', 'Title is required').not().isEmpty(),
     check('description', 'Description is required').not().isEmpty(),
-    check('category', 'Valid category is required').isIn([
-      'handicrafts',
-      'paintings',
-      'decor',
-      'jewelry',
-      'furniture',
-      'other'
-    ]),
     check('startingPrice', 'Starting price must be a positive number').isFloat({ min: 0 }),
-    check('duration', 'Duration must be between 1 and 168 hours').isFloat({ min: 1, max: 168 }),
-    check('images', 'At least one image is required').isArray({ min: 1 })
+    check('duration', 'Duration must be between 1 and 168 hours').isFloat({ min: 1, max: 168 })
   ],
   createProduct
 );
 
-router.get('/vendor/products', authorize('vendor'), getVendorProducts);
-
-router
-  .route('/:id')
-  .put(authorize('vendor'), updateProduct)
-  .delete(authorize('vendor'), deleteProduct);
-
 // Admin routes
+router.put('/:id/review', authorize('admin'), reviewProduct);
+
+// Vendor routes
 router.put(
-  '/:id/review',
-  authorize('admin'),
+  '/:id',
+  authorize('vendor'),
   [
-    check('status', 'Status is required').isIn(['active', 'rejected']),
-    check('adminRemarks', 'Admin remarks cannot exceed 500 characters').optional().isLength({ max: 500 })
+    check('title', 'Title is required').optional().not().isEmpty(),
+    check('description', 'Description is required').optional().not().isEmpty(),
+    check('startingPrice', 'Starting price must be a positive number').optional().isFloat({ min: 0 }),
+    check('duration', 'Duration must be between 1 and 168 hours').optional().isFloat({ min: 1, max: 168 })
   ],
-  reviewProduct
+  updateProduct
 );
+
+router.delete('/:id', authorize('vendor'), deleteProduct);
 
 module.exports = router;
