@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const fileUpload = require('express-fileupload');
 const connectDB = require('./config/db');
 
 // Load env vars
@@ -14,11 +15,23 @@ connectDB();
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
 // Body parser
 app.use(express.json());
+
+// File Upload
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: './tmp',
+  debug: process.env.NODE_ENV === 'development',
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  abortOnLimit: true,
+  responseOnLimit: 'File size is too large. Maximum size is 5MB.',
+  createParentPath: true,
+}));
 
 // Enable CORS
 const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -36,6 +49,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
