@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 // Initial state
 const initialState = {
@@ -95,6 +96,7 @@ const authReducer = (state, action) => {
 // Provider component
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const navigate = useNavigate();
 
   // Set auth token
   const setAuthToken = (token) => {
@@ -230,6 +232,8 @@ export const AuthProvider = ({ children }) => {
   // Logout
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
+    toast.success('Signed out successfully');
+    navigate('/'); // Navigate to home page after logout
   };
 
   // Update password
