@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const BuyerDashboard = () => {
   const { state } = useAuth();
@@ -38,9 +39,11 @@ const BuyerDashboard = () => {
           <h4 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h4>
           <div className="bg-gray-50 p-6 rounded-lg text-center">
             <p className="text-gray-500">No recent activity to display</p>
-            <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-              Browse Auctions
-            </button>
+            <Link to="/products">
+              <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Browse Auctions
+              </button>
+            </Link>
           </div>
         </div>
       </div>
