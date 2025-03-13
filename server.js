@@ -13,6 +13,7 @@ connectDB();
 // Route files
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -20,7 +21,11 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS
-app.use(cors());
+const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
+app.use(cors({
+  origin: [clientURL, 'https://bidbazaar.pages.dev'],
+  credentials: true
+}));
 
 // Dev logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -30,6 +35,7 @@ if (process.env.NODE_ENV === 'development') {
 // Mount routers
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
