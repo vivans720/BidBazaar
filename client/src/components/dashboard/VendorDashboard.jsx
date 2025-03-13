@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import ProductDetail from '../products/ProductDetail';
 import { toast } from 'react-toastify';
 
 const VendorDashboard = () => {
@@ -10,6 +11,7 @@ const VendorDashboard = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     fetchVendorProducts();
@@ -17,15 +19,15 @@ const VendorDashboard = () => {
 
   const fetchVendorProducts = async () => {
     try {
+      console.log('Fetching vendor products...');
       const res = await api.get('/products/vendor/products');
       console.log('Vendor products response:', res.data);
-      setProducts(res.data.data || []);
+      setProducts(res.data.data);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching vendor products:', err);
-      const errorMessage = err.response?.data?.error || 'Error fetching products';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error('Error fetching vendor products:', err.response?.data || err.message);
+      setError(err.response?.data?.error || 'Error fetching products');
+      toast.error(err.response?.data?.error || 'Error fetching products');
       setLoading(false);
     }
   };
@@ -39,6 +41,16 @@ const VendorDashboard = () => {
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
         {error}
       </div>
+    );
+  }
+
+  // If a product is selected, show its details
+  if (selectedProduct) {
+    return (
+      <ProductDetail
+        product={selectedProduct}
+        onBack={() => setSelectedProduct(null)}
+      />
     );
   }
 
@@ -121,14 +133,21 @@ const VendorDashboard = () => {
                           <div className="h-10 w-10 flex-shrink-0">
                             <img
                               className="h-10 w-10 rounded-full object-cover"
-                              src={product.images[0]?.url || 'https://via.placeholder.com/40'}
-                              alt=""
+                              src={product.images?.[0]?.url || '/placeholder-product.png'}
+                              alt={product.title}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder-product.png';
+                              }}
                             />
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <button
+                              onClick={() => setSelectedProduct(product)}
+                              className="text-sm font-medium text-primary-600 hover:text-primary-900"
+                            >
                               {product.title}
-                            </div>
+                            </button>
                             <div className="text-sm text-gray-500">
                               {product.category}
                             </div>
@@ -144,7 +163,7 @@ const VendorDashboard = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{product.currentPrice}
+                        ${product.currentPrice}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(product.endTime).toLocaleDateString()}
