@@ -23,9 +23,11 @@ const ProductList = () => {
       const queryString = new URLSearchParams({
         category: filters.category,
         sort: filters.sort,
-        page: filters.page
+        page: filters.page,
+        status: 'active'
       }).toString();
 
+      console.log('Fetching products with query:', queryString);
       const res = await api.get(`/products?${queryString}`);
       console.log('Products response:', res.data);
       setProducts(res.data.data);
