@@ -63,6 +63,15 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
     }
   };
 
+  // Format price
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
   return (
     <>
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -112,12 +121,14 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
             {/* Pricing Info */}
             <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Starting Price</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">₹{product.startingPrice}</dd>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatPrice(product.startingPrice)}</dd>
             </div>
 
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Current Price</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">₹{product.currentPrice}</dd>
+              <dt className="text-sm font-medium text-gray-500">
+                {auctionStatus === 'ended' ? 'Final Price' : 'Current Price'}
+              </dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatPrice(product.currentPrice)}</dd>
             </div>
 
             {/* Auction Info */}
@@ -152,11 +163,49 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
               </dd>
             </div>
 
-            {/* Vendor Info */}
+            {/* Vendor/Seller Info */}
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Vendor</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{product.vendor.name}</dd>
+              <dt className="text-sm font-medium text-gray-500">
+                {auctionStatus === 'ended' ? 'Sold By' : 'Vendor'}
+              </dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {product.vendor.name}
+                {product.vendor.email && (
+                  <span className="text-gray-500 ml-2">({product.vendor.email})</span>
+                )}
+              </dd>
             </div>
+
+            {/* Buyer Info (Only for ended auctions with a winner) */}
+            {auctionStatus === 'ended' && product.winner && (
+              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt className="text-sm font-medium text-gray-500">Bought By</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  {product.winner.name}
+                  {product.winner.email && (
+                    <span className="text-gray-500 ml-2">({product.winner.email})</span>
+                  )}
+                </dd>
+              </div>
+            )}
+
+            {/* Auction Result (For ended auctions) */}
+            {auctionStatus === 'ended' && (
+              <div className={`${product.winner ? 'bg-green-50' : 'bg-yellow-50'} px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6`}>
+                <dt className="text-sm font-medium text-gray-500">Auction Result</dt>
+                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                  {product.winner ? (
+                    <span className="text-green-700">
+                      Auction completed successfully. The item was sold for {formatPrice(product.currentPrice)}.
+                    </span>
+                  ) : (
+                    <span className="text-yellow-700">
+                      Auction ended with no bids.
+                    </span>
+                  )}
+                </dd>
+              </div>
+            )}
 
             {/* Admin Remarks (if any) */}
             {product.adminRemarks && (
