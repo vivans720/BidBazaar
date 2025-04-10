@@ -56,7 +56,10 @@ const VendorDashboard = () => {
 
   const pendingProducts = products.filter(p => p.status === 'pending');
   const activeProducts = products.filter(p => p.status === 'active');
-  const endedProducts = products.filter(p => p.status === 'ended');
+  // Only count products as completed sales if they have a winner
+  const completedSales = products.filter(p => p.winner);
+  // Expired auctions are those that have ended but don't have a winner
+  const expiredAuctions = products.filter(p => p.status === 'ended' && !p.winner);
 
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -68,7 +71,7 @@ const VendorDashboard = () => {
       </div>
       
       <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="bg-primary-50 p-6 rounded-lg shadow-sm">
             <h4 className="text-lg font-medium text-primary-800 mb-2">Active Listings</h4>
             <p className="text-3xl font-bold text-primary-600">{activeProducts.length}</p>
@@ -81,7 +84,14 @@ const VendorDashboard = () => {
           
           <div className="bg-green-50 p-6 rounded-lg shadow-sm">
             <h4 className="text-lg font-medium text-green-800 mb-2">Completed Sales</h4>
-            <p className="text-3xl font-bold text-green-600">{endedProducts.length}</p>
+            <p className="text-3xl font-bold text-green-600">{completedSales.length}</p>
+            <p className="text-xs text-green-700 mt-1">Items sold with a winner</p>
+          </div>
+          
+          <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+            <h4 className="text-lg font-medium text-gray-800 mb-2">Expired Auctions</h4>
+            <p className="text-3xl font-bold text-gray-600">{expiredAuctions.length}</p>
+            <p className="text-xs text-gray-700 mt-1">Ended with no buyers</p>
           </div>
         </div>
         
@@ -123,6 +133,9 @@ const VendorDashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       End Time
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Winner
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -158,15 +171,30 @@ const VendorDashboard = () => {
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                           ${product.status === 'active' ? 'bg-green-100 text-green-800' :
                             product.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            product.status === 'ended' && product.winner ? 'bg-blue-100 text-blue-800' :
+                            product.status === 'ended' ? 'bg-gray-100 text-gray-800' :
                             'bg-gray-100 text-gray-800'}`}>
-                          {product.status}
+                          {product.status === 'ended' && product.winner 
+                            ? 'Sold' 
+                            : product.status === 'ended' 
+                              ? 'Expired' 
+                              : product.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${product.currentPrice}
+                        ₹{product.currentPrice}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(product.endTime).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {product.winner ? (
+                          <span className="text-green-600 font-medium">Yes</span>
+                        ) : product.status === 'ended' ? (
+                          <span className="text-red-600">No</span>
+                        ) : (
+                          <span>-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
