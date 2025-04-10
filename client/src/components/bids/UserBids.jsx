@@ -35,16 +35,66 @@ const UserBids = () => {
     }).format(price);
   };
 
-  const getBidStatusBadge = (status) => {
-    switch (status) {
-      case 'active':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Active</span>;
-      case 'won':
+  const getBidStatusBadge = (bid) => {
+    // Determine the auction status based on product status and bid status
+    const isAuctionEnded = bid.product.status === 'sold' || bid.product.status === 'expired';
+    
+    if (isAuctionEnded) {
+      if (bid.status === 'won') {
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Won</span>;
-      case 'lost':
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Lost</span>;
-      default:
-        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>;
+      } else if (bid.product.status === 'sold') {
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Outbid</span>;
+      } else {
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Auction Ended</span>;
+      }
+    } else {
+      // Auction is still active
+      if (bid.isHighestBid) {
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Highest Bid</span>;
+      } else {
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Outbid</span>;
+      }
+    }
+  };
+
+  // Get additional status information
+  const getStatusInfo = (bid) => {
+    if (bid.product.status === 'sold') {
+      if (bid.status === 'won') {
+        return <div className="text-green-600 text-xs mt-1">You won this auction!</div>;
+      } else {
+        const winningAmount = bid.product.currentPrice || bid.product.startingPrice;
+        return <div className="text-gray-500 text-xs mt-1">Sold for {formatPrice(winningAmount)}</div>;
+      }
+    } else if (bid.product.status === 'expired') {
+      return <div className="text-gray-500 text-xs mt-1">Auction ended with no winner</div>;
+    } else if (bid.isHighestBid) {
+      return <div className="text-blue-600 text-xs mt-1">Your bid is currently leading</div>;
+    }
+    
+    return null;
+  };
+
+  // Format date with relative time
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+
+    if (diffInHours < 24) {
+      if (diffInHours === 0) {
+        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+        return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+      }
+      return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     }
   };
 
@@ -133,19 +183,30 @@ const UserBids = () => {
                         <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
                           {bid.product.title}
                         </div>
+                        <div className="text-xs text-gray-500">
+                          {bid.product.status === 'active' 
+                            ? `Ends: ${new Date(bid.product.auctionEndTime).toLocaleDateString()}` 
+                            : `Ended: ${new Date(bid.product.auctionEndTime).toLocaleDateString()}`}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{formatPrice(bid.amount)}</div>
+                    {bid.product.currentPrice && (
+                      <div className="text-xs text-gray-500">
+                        Current price: {formatPrice(bid.product.currentPrice)}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">
-                      {new Date(bid.createdAt).toLocaleString()}
+                      {formatDate(bid.createdAt)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getBidStatusBadge(bid.status)}
+                    {getBidStatusBadge(bid)}
+                    {getStatusInfo(bid)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <Link to={`/products/${bid.product._id}`} className="text-primary-600 hover:text-primary-900">
