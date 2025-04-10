@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const fileUpload = require('express-fileupload');
 const connectDB = require('./config/db');
+const Product = require('./models/productModel');
 
 // Load env vars
 dotenv.config();
@@ -44,6 +45,33 @@ app.use(cors({
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Scheduled task to update expired auctions
+const updateExpiredAuctions = async () => {
+  const now = new Date();
+  try {
+    const expiredProducts = await Product.find({
+      status: 'active',
+      endTime: { $lt: now }
+    });
+    
+    console.log(`Found ${expiredProducts.length} expired auctions to update`);
+    
+    for (const product of expiredProducts) {
+      product.status = 'ended';
+      await product.save();
+      console.log(`Updated product ${product._id} status to ended`);
+    }
+  } catch (err) {
+    console.error('Error updating expired auctions:', err);
+  }
+};
+
+// Run immediately on startup
+updateExpiredAuctions();
+
+// Then schedule to run every 10 minutes
+setInterval(updateExpiredAuctions, 10 * 60 * 1000);
 
 // Mount routers
 app.use('/api/users', userRoutes);
