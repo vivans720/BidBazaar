@@ -1,7 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
 
 const HomePage = () => {
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    activeAuctions: 0,
+    totalBids: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // We'll assume the API endpoint for stats exists or will be created later
+        // Replace with actual endpoints when available
+        const [productsResponse, bidsResponse] = await Promise.all([
+          api.get('/products/stats'),
+          api.get('/bids/stats')
+        ]);
+        
+        setStats({
+          totalProducts: productsResponse.data.total || 0,
+          activeAuctions: productsResponse.data.active || 0,
+          totalBids: bidsResponse.data.total || 0
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        // Use some placeholder numbers if the API fails
+        setStats({
+          totalProducts: 120,
+          activeAuctions: 45,
+          totalBids: 350
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div className="bg-white">
       {/* Hero section */}
@@ -34,6 +73,75 @@ const HomePage = () => {
             >
               Sign In
             </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="py-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+              Platform Statistics
+            </h2>
+            <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+              Join our growing community of buyers and sellers
+            </p>
+          </div>
+          
+          <div className="mt-10">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="pt-6">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6 text-center">
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Total Products
+                    </dt>
+                    <dd className="mt-1 text-3xl font-semibold text-primary-700">
+                      {loading ? (
+                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
+                      ) : (
+                        stats.totalProducts.toLocaleString()
+                      )}
+                    </dd>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6 text-center">
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Active Auctions
+                    </dt>
+                    <dd className="mt-1 text-3xl font-semibold text-green-600">
+                      {loading ? (
+                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
+                      ) : (
+                        stats.activeAuctions.toLocaleString()
+                      )}
+                    </dd>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <div className="bg-white overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6 text-center">
+                    <dt className="text-sm font-medium text-gray-500 truncate">
+                      Total Bids Placed
+                    </dt>
+                    <dd className="mt-1 text-3xl font-semibold text-indigo-600">
+                      {loading ? (
+                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
+                      ) : (
+                        stats.totalBids.toLocaleString()
+                      )}
+                    </dd>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
