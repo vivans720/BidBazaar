@@ -61,4 +61,20 @@ api.interceptors.response.use(
   }
 );
 
+// Example usage (assuming this is the structure of your api.js):
+// Place a bid
+export const placeBid = (productId, amount) => {
+  return api.post('/bids', { productId, amount });
+};
+
+// Get bids for a product
+export const getProductBids = (productId) => {
+  return api.get(`/bids/product/${productId}`);
+};
+
+// Get user's bids
+export const getUserBids = () => {
+  return api.get('/bids/user');
+};
+
 export default api; 
