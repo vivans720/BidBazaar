@@ -309,4 +309,16 @@ export const AuthProvider = ({ children }) => {
 };
 
 // Custom hook to use auth context
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+
+  // Add these derived values for easier access in components
+  return {
+    ...context,
+    user: context.state.user,
+    isAuthenticated: context.state.isAuthenticated
+  };
+};
