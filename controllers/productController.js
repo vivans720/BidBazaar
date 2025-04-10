@@ -108,7 +108,10 @@ exports.getProducts = async (req, res) => {
 // @access  Public
 exports.getProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('vendor', 'name');
+    // Populate both vendor and winner fields for complete sale information
+    const product = await Product.findById(req.params.id)
+      .populate('vendor', 'name email')
+      .populate('winner', 'name email');
 
     if (!product) {
       return res.status(404).json({
@@ -125,14 +128,8 @@ exports.getProduct = async (req, res) => {
       console.log(`Updated product ${product._id} status to ended`);
     }
 
-    // Only return active products for non-admin users
-    if (product.status !== 'active' && (!req.user || req.user.role !== 'admin')) {
-      return res.status(404).json({
-        success: false,
-        error: 'Product not found'
-      });
-    }
-
+    // Allow viewing of all products regardless of status
+    // This ensures users can view auction results
     res.status(200).json({
       success: true,
       data: product
