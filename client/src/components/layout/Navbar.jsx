@@ -7,8 +7,9 @@ import logo from '../../assets/logo.png';
 
 const navigation = [
   { name: 'Home', href: '/', public: true },
+  { name: 'Auctions', href: '/products', public: true },
+  { name: 'My Bids', href: '/bids', public: false },
   { name: 'Dashboard', href: '/dashboard', public: false },
-  { name: 'Profile', href: '/profile', public: false },
 ];
 
 function classNames(...classes) {
@@ -96,6 +97,19 @@ const Navbar = () => {
                               )}
                             >
                               Your Profile
+                            </Link>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <Link
+                              to="/bids"
+                              className={classNames(
+                                active ? 'bg-gray-100' : '',
+                                'block px-4 py-2 text-sm text-gray-700'
+                              )}
+                            >
+                              My Bids
                             </Link>
                           )}
                         </Menu.Item>
