@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import ImageModal from './ImageModal';
@@ -6,6 +6,29 @@ import ImageModal from './ImageModal';
 const ProductCard = ({ product }) => {
   const [imageError, setImageError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [auctionStatus, setAuctionStatus] = useState(product.status);
+  
+  // Calculate time remaining and update status if expired
+  useEffect(() => {
+    const checkAuctionStatus = () => {
+      const now = new Date();
+      const endTime = new Date(product.endTime);
+      
+      if (endTime < now && product.status === 'active') {
+        setAuctionStatus('ended');
+      } else {
+        setAuctionStatus(product.status);
+      }
+    };
+    
+    checkAuctionStatus();
+    
+    // Update status every minute
+    const intervalId = setInterval(checkAuctionStatus, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [product.endTime, product.status]);
+  
   const timeLeft = formatDistanceToNow(new Date(product.endTime), { addSuffix: true });
   
   const fallbackImage = 'https://via.placeholder.com/400x300?text=No+Image+Available';
@@ -57,12 +80,20 @@ const ProductCard = ({ product }) => {
               </div>
               
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  Ends {timeLeft}
-                </p>
-                <p className="text-sm text-gray-500">
-                  By {product.vendor.name}
-                </p>
+                <div className="flex flex-col items-end">
+                  {auctionStatus === 'active' ? (
+                    <p className="text-sm font-medium text-gray-900">
+                      Ends {timeLeft}
+                    </p>
+                  ) : (
+                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                      Auction Ended
+                    </span>
+                  )}
+                  <p className="text-sm text-gray-500 mt-1">
+                    By {product.vendor.name}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
