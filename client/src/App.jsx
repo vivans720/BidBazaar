@@ -16,6 +16,8 @@ import ProfilePage from './pages/ProfilePage';
 import ProductList from './components/products/ProductList';
 import CreateProduct from './components/products/CreateProduct';
 import ProductDetailPage from './pages/ProductDetailPage';
+import UserBidsPage from './pages/UserBidsPage';
+import TokenDebugger from './components/debug/TokenDebugger';
 
 const App = () => {
   return (
@@ -30,10 +32,12 @@ const App = () => {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/debug" element={<TokenDebugger />} />
               
               {/* Protected routes for all authenticated users */}
               <Route element={<PrivateRoute allowedRoles={['admin', 'vendor', 'buyer']} />}>
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/bids" element={<UserBidsPage />} />
               </Route>
 
               {/* Protected routes for vendors */}
