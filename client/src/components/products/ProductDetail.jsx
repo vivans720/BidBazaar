@@ -1,11 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import ImageModal from './ImageModal';
 
 const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
+  const [auctionStatus, setAuctionStatus] = useState(product.status);
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  // Check and update auction status
+  useEffect(() => {
+    const checkAuctionStatus = () => {
+      const now = new Date();
+      const endTime = new Date(product.endTime);
+      
+      if (endTime < now && product.status === 'active') {
+        setAuctionStatus('ended');
+      } else {
+        setAuctionStatus(product.status);
+      }
+      
+      // Calculate time remaining
+      if (endTime > now) {
+        setTimeLeft(formatDistanceToNow(endTime, { addSuffix: true }));
+      } else {
+        setTimeLeft('Ended');
+      }
+    };
+    
+    checkAuctionStatus();
+    
+    // Update status every minute
+    const intervalId = setInterval(checkAuctionStatus, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, [product.endTime, product.status]);
 
   const handleReject = () => {
     const remarks = prompt('Enter rejection remarks:');
@@ -16,6 +46,21 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
 
   const handleImageClick = (image) => {
     setSelectedImage(image);
+  };
+
+  const getStatusBadgeClasses = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'ended':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -67,12 +112,12 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
             {/* Pricing Info */}
             <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Starting Price</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${product.startingPrice}</dd>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">₹{product.startingPrice}</dd>
             </div>
 
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Current Price</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${product.currentPrice}</dd>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">₹{product.currentPrice}</dd>
             </div>
 
             {/* Auction Info */}
@@ -86,7 +131,14 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
             <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">End Time</dt>
               <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {format(new Date(product.endTime), 'PPpp')}
+                <div className="flex items-center">
+                  <span>{format(new Date(product.endTime), 'PPpp')}</span>
+                  {auctionStatus === 'active' && (
+                    <span className="ml-2 text-sm text-primary-600 font-medium">
+                      ({timeLeft})
+                    </span>
+                  )}
+                </div>
               </dd>
             </div>
 
@@ -94,12 +146,8 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
             <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt className="text-sm font-medium text-gray-500">Status</dt>
               <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${product.status === 'active' ? 'bg-green-100 text-green-800' : 
-                    product.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                    product.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                    'bg-gray-100 text-gray-800'}`}>
-                  {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClasses(auctionStatus)}`}>
+                  {auctionStatus.charAt(0).toUpperCase() + auctionStatus.slice(1)}
                 </span>
               </dd>
             </div>
