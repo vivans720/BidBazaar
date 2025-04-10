@@ -38,6 +38,9 @@ exports.createProduct = async (req, res) => {
 // @access  Public
 exports.getProducts = async (req, res) => {
   try {
+    // First, update any expired auctions
+    await updateExpiredAuctions();
+    
     const { category, status, sort, page = 1, limit = 10 } = req.query;
     const query = {};
 
@@ -112,6 +115,14 @@ exports.getProduct = async (req, res) => {
         success: false,
         error: 'Product not found'
       });
+    }
+    
+    // Check if auction has expired and update status if needed
+    const now = new Date();
+    if (product.status === 'active' && new Date(product.endTime) < now) {
+      product.status = 'ended';
+      await product.save();
+      console.log(`Updated product ${product._id} status to ended`);
     }
 
     // Only return active products for non-admin users
@@ -250,43 +261,44 @@ exports.getVendorProducts = async (req, res) => {
   }
 };
 
-// @desc    Review product (approve/reject)
+// @desc    Review product (admin only)
 // @route   PUT /api/products/:id/review
 // @access  Private/Admin
 exports.reviewProduct = async (req, res) => {
   try {
     const { status, adminRemarks } = req.body;
     
-    if (!['active', 'rejected'].includes(status)) {
+    if (!status || !['active', 'rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid status. Must be either active or rejected'
+        error: 'Please provide a valid status (active or rejected)'
       });
     }
-
-    let product = await Product.findById(req.params.id);
-
+    
+    const product = await Product.findById(req.params.id);
+    
     if (!product) {
       return res.status(404).json({
         success: false,
         error: 'Product not found'
       });
     }
-
+    
     // Only allow reviewing pending products
     if (product.status !== 'pending') {
       return res.status(400).json({
         success: false,
-        error: 'Can only review pending products'
+        error: `Cannot review ${product.status} products`
       });
     }
-
-    product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { status, adminRemarks },
-      { new: true, runValidators: true }
-    );
-
+    
+    product.status = status;
+    if (adminRemarks) {
+      product.adminRemarks = adminRemarks;
+    }
+    
+    await product.save();
+    
     res.status(200).json({
       success: true,
       data: product
@@ -297,6 +309,39 @@ exports.reviewProduct = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// Utility function to check and update expired auctions
+const updateExpiredAuctions = async (productsToCheck) => {
+  const now = new Date();
+  
+  // If we received specific products to check
+  if (productsToCheck && Array.isArray(productsToCheck)) {
+    for (const product of productsToCheck) {
+      if (product.status === 'active' && new Date(product.endTime) < now) {
+        product.status = 'ended';
+        await product.save();
+        console.log(`Updated product ${product._id} status to ended`);
+      }
+    }
+    return productsToCheck;
+  }
+  
+  // If no specific products provided, update all expired active products in the database
+  const expiredProducts = await Product.find({
+    status: 'active',
+    endTime: { $lt: now }
+  });
+  
+  console.log(`Found ${expiredProducts.length} expired auctions to update`);
+  
+  for (const product of expiredProducts) {
+    product.status = 'ended';
+    await product.save();
+    console.log(`Updated product ${product._id} status to ended`);
+  }
+  
+  return expiredProducts;
 };
 
 module.exports = {
