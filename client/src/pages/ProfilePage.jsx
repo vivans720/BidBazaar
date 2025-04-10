@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ProfileForm from '../components/profile/ProfileForm';
 import PasswordForm from '../components/profile/PasswordForm';
 import UserInfo from '../components/dashboard/UserInfo';
+import UserBids from '../components/user/UserBids';
 
 const ProfilePage = () => {
   const { state } = useAuth();
@@ -43,6 +44,16 @@ const ProfilePage = () => {
                 Account Information
               </button>
               <button
+                onClick={() => setActiveTab('bids')}
+                className={`${
+                  activeTab === 'bids'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+              >
+                Your Bids
+              </button>
+              <button
                 onClick={() => setActiveTab('edit')}
                 className={`${
                   activeTab === 'edit'
@@ -67,6 +78,7 @@ const ProfilePage = () => {
           
           <div className="p-4">
             {activeTab === 'info' && <UserInfo />}
+            {activeTab === 'bids' && <UserBids />}
             {activeTab === 'edit' && <ProfileForm />}
             {activeTab === 'password' && <PasswordForm />}
           </div>
