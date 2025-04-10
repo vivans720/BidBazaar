@@ -5,8 +5,9 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
 
-const navigation = [
-  { name: 'Home', href: '/', public: true },
+// Navigation items configuration
+const getNavigation = (isAuthenticated) => [
+  { name: 'Home', href: isAuthenticated ? '/dashboard' : '/', public: true },
   { name: 'Auctions', href: '/products', public: true },
   { name: 'My Bids', href: '/bids', public: false },
   { name: 'Dashboard', href: '/dashboard', public: false },
@@ -20,9 +21,15 @@ const Navbar = () => {
   const { state, logout } = useAuth();
   const { isAuthenticated, user } = state;
 
-  const filteredNavigation = navigation.filter(
+  // Get navigation items based on authentication status
+  const navigationItems = getNavigation(isAuthenticated);
+  
+  const filteredNavigation = navigationItems.filter(
     item => item.public || isAuthenticated
   );
+
+  // Home URL changes based on authentication status
+  const homeUrl = isAuthenticated ? '/dashboard' : '/';
 
   return (
     <Disclosure as="nav" className="bg-primary-700">
@@ -43,7 +50,7 @@ const Navbar = () => {
               </div>
               <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
-                  <Link to="/" className="flex items-center">
+                  <Link to={homeUrl} className="flex items-center">
                     <img 
                       src={logo} 
                       alt="BidBazaar Logo" 
