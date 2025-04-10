@@ -1,10 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { getUserBids } from '../../utils/api';
 
 const BuyerDashboard = () => {
-  const { state } = useAuth();
-  const { user } = state;
+  const { user } = useAuth().state;
+  const [bidStats, setBidStats] = useState({
+    activeBids: 0,
+    wonAuctions: 0,
+    totalBids: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBidStats = async () => {
+      try {
+        const response = await getUserBids();
+        const bids = response.data;
+        
+        const activeBids = bids.filter(bid => bid.status === 'active').length;
+        const wonAuctions = bids.filter(bid => bid.status === 'won').length;
+        
+        setBidStats({
+          activeBids,
+          wonAuctions,
+          totalBids: bids.length
+        });
+      } catch (error) {
+        console.error('Error fetching bid statistics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBidStats();
+  }, []);
 
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -18,33 +48,105 @@ const BuyerDashboard = () => {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="bg-primary-50 p-6 rounded-lg shadow-sm">
             <h4 className="text-lg font-medium text-primary-800 mb-2">Active Bids</h4>
-            <p className="text-3xl font-bold text-primary-600">0</p>
-            <p className="text-sm text-primary-700 mt-2">You have no active bids</p>
+            {loading ? (
+              <div className="animate-pulse h-8 bg-primary-200 rounded w-16"></div>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-primary-600">{bidStats.activeBids}</p>
+                <p className="text-sm text-primary-700 mt-2">
+                  {bidStats.activeBids === 0 
+                    ? "You have no active bids" 
+                    : `You have ${bidStats.activeBids} active bid${bidStats.activeBids !== 1 ? 's' : ''}`}
+                </p>
+              </>
+            )}
           </div>
           
           <div className="bg-green-50 p-6 rounded-lg shadow-sm">
             <h4 className="text-lg font-medium text-green-800 mb-2">Won Auctions</h4>
-            <p className="text-3xl font-bold text-green-600">0</p>
-            <p className="text-sm text-green-700 mt-2">You haven't won any auctions yet</p>
+            {loading ? (
+              <div className="animate-pulse h-8 bg-green-200 rounded w-16"></div>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-green-600">{bidStats.wonAuctions}</p>
+                <p className="text-sm text-green-700 mt-2">
+                  {bidStats.wonAuctions === 0 
+                    ? "You haven't won any auctions yet" 
+                    : `You've won ${bidStats.wonAuctions} auction${bidStats.wonAuctions !== 1 ? 's' : ''}`}
+                </p>
+              </>
+            )}
           </div>
           
           <div className="bg-purple-50 p-6 rounded-lg shadow-sm">
-            <h4 className="text-lg font-medium text-purple-800 mb-2">Watchlist</h4>
-            <p className="text-3xl font-bold text-purple-600">0</p>
-            <p className="text-sm text-purple-700 mt-2">No items in your watchlist</p>
+            <h4 className="text-lg font-medium text-purple-800 mb-2">Total Bids</h4>
+            {loading ? (
+              <div className="animate-pulse h-8 bg-purple-200 rounded w-16"></div>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-purple-600">{bidStats.totalBids}</p>
+                <p className="text-sm text-purple-700 mt-2">
+                  {bidStats.totalBids === 0 
+                    ? "You haven't placed any bids yet" 
+                    : `You've placed ${bidStats.totalBids} bid${bidStats.totalBids !== 1 ? 's' : ''} in total`}
+                </p>
+              </>
+            )}
           </div>
         </div>
         
         <div className="mt-8">
-          <h4 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h4>
-          <div className="bg-gray-50 p-6 rounded-lg text-center">
-            <p className="text-gray-500">No recent activity to display</p>
-            <Link to="/products">
-              <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                Browse Auctions
-              </button>
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-lg font-medium text-gray-900">Your Bids</h4>
+            <Link to="/bids" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+              View all bids
             </Link>
           </div>
+          
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse bg-gray-100 p-4 rounded-lg">
+                  <div className="flex justify-between">
+                    <div className="w-1/2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="w-1/4">
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : bidStats.totalBids === 0 ? (
+            <div className="bg-gray-50 p-6 rounded-lg text-center">
+              <p className="text-gray-500">You haven't placed any bids yet</p>
+              <Link to="/products">
+                <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                  Browse Auctions
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="bg-gray-50 p-6 rounded-lg text-center">
+              <p className="text-gray-700">
+                You have {bidStats.activeBids} active bids and have won {bidStats.wonAuctions} auctions.
+              </p>
+              <div className="mt-4 flex justify-center space-x-4">
+                <Link to="/bids">
+                  <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    View Your Bids
+                  </button>
+                </Link>
+                <Link to="/products">
+                  <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    Browse More Auctions
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
