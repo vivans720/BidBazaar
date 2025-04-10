@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const fileUpload = require('express-fileupload');
 const connectDB = require('./config/db');
 const Product = require('./models/productModel');
+const Bid = require('./models/bidModel');
 
 // Load env vars
 dotenv.config();
@@ -17,6 +18,7 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const bidRoutes = require('./routes/bidRoutes');
 
 const app = express();
 
@@ -59,6 +61,29 @@ const updateExpiredAuctions = async () => {
     
     for (const product of expiredProducts) {
       product.status = 'ended';
+      
+      // Find the highest bidder and set them as the winner
+      const highestBid = await Bid.findOne({ product: product._id })
+        .sort({ amount: -1 })
+        .populate('bidder', 'name email');
+      
+      if (highestBid) {
+        product.winner = highestBid.bidder._id;
+        console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
+        
+        // Update the winning bid status to 'won'
+        highestBid.status = 'won';
+        await highestBid.save();
+        
+        // Update all other bids for this product to 'lost'
+        await Bid.updateMany(
+          { product: product._id, _id: { $ne: highestBid._id } },
+          { status: 'lost' }
+        );
+      } else {
+        console.log(`No bids found for product ${product._id}`);
+      }
+      
       await product.save();
       console.log(`Updated product ${product._id} status to ended`);
     }
@@ -78,6 +103,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/bids', bidRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
