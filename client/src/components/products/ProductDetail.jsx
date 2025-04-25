@@ -207,6 +207,66 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
               </div>
             )}
 
+            {/* Transaction Summary (For completed sales) */}
+            {auctionStatus === 'ended' && product.winner && (
+              <div className="bg-green-50 px-4 py-5 sm:px-6 border-t border-green-100">
+                <h4 className="text-lg font-medium text-green-800 mb-4">Transaction Summary</h4>
+                <div className="bg-white shadow overflow-hidden rounded-lg border border-green-200">
+                  <div className="px-4 py-4 sm:px-6 flex items-center justify-between bg-green-50">
+                    <div>
+                      <h5 className="text-sm font-medium text-green-900">Auction ID: {product._id}</h5>
+                      <p className="text-xs text-green-700">Completed on {format(new Date(product.endTime), 'PPpp')}</p>
+                    </div>
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      SOLD
+                    </span>
+                  </div>
+                  <div className="border-t border-green-100 px-4 py-3 sm:px-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h6 className="text-xs font-medium text-gray-500 uppercase mb-2">Seller</h6>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-700 font-medium">
+                              {product.vendor.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{product.vendor.name}</p>
+                            {product.vendor.email && (
+                              <p className="text-xs text-gray-500">{product.vendor.email}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <h6 className="text-xs font-medium text-gray-500 uppercase mb-2">Buyer</h6>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-700 font-medium">
+                              {product.winner.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{product.winner.name}</p>
+                            {product.winner.email && (
+                              <p className="text-xs text-gray-500">{product.winner.email}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-green-100 px-4 py-3 sm:px-6">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-900">Final Sale Price:</span>
+                      <span className="text-lg font-bold text-green-700">{formatPrice(product.currentPrice)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Admin Remarks (if any) */}
             {product.adminRemarks && (
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
