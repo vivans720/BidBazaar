@@ -134,7 +134,7 @@ const VendorDashboard = () => {
                       End Time
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Winner
+                      Buyer
                     </th>
                   </tr>
                 </thead>
@@ -187,13 +187,18 @@ const VendorDashboard = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(product.endTime).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {product.winner ? (
-                          <span className="text-green-600 font-medium">Yes</span>
+                          <div className="flex flex-col">
+                            <span className="text-green-600 font-medium">{product.winner.name}</span>
+                            {product.winner.email && (
+                              <span className="text-xs text-gray-500">{product.winner.email}</span>
+                            )}
+                          </div>
                         ) : product.status === 'ended' ? (
-                          <span className="text-red-600">No</span>
+                          <span className="text-red-600">No buyer</span>
                         ) : (
-                          <span>-</span>
+                          <span className="text-gray-500">-</span>
                         )}
                       </td>
                     </tr>
