@@ -49,6 +49,34 @@ const UserBids = () => {
         return 'bg-blue-100 text-blue-800';
     }
   };
+  
+  // Get status display text with proper capitalization
+  const getStatusDisplay = (bid) => {
+    if (bid.status === 'won') {
+      return 'Won';
+    } else if (bid.status === 'lost') {
+      return 'Outbid';
+    } else if (bid.status === 'active') {
+      // Check if it's the highest bid
+      const isHighestBid = bid.product?.currentPrice === bid.amount;
+      return isHighestBid ? 'Highest Bid' : 'Active';
+    }
+    return bid.status.charAt(0).toUpperCase() + bid.status.slice(1);
+  };
+  
+  // Get additional status information
+  const getStatusInfo = (bid) => {
+    if (bid.status === 'won') {
+      return <div className="text-green-600 text-xs mt-1">You won this auction!</div>;
+    } else if (bid.status === 'lost' && bid.product?.status === 'ended') {
+      const winningAmount = bid.product.currentPrice || bid.product.startingPrice;
+      return <div className="text-gray-500 text-xs mt-1">Sold for {formatPrice(winningAmount || 0)}</div>;
+    } else if (bid.product?.status === 'expired') {
+      return <div className="text-gray-500 text-xs mt-1">Auction ended with no winner</div>;
+    }
+    
+    return null;
+  };
 
   if (loading) {
     return (
@@ -150,8 +178,9 @@ const UserBids = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getBadgeColor(bid.status)}`}>
-                    {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+                    {getStatusDisplay(bid)}
                   </span>
+                  {getStatusInfo(bid)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <Link 
