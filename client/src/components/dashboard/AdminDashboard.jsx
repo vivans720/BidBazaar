@@ -3,12 +3,13 @@ import api from '../../utils/api';
 import { toast } from 'react-toastify';
 import ProductDetail from '../products/ProductDetail';
 import { useAuth } from '../../context/AuthContext';
+import BidStats from './BidStats';
 
 const AdminDashboard = () => {
   const { state } = useAuth();
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('stats');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -116,6 +117,16 @@ const AdminDashboard = () => {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           <button
+            onClick={() => setActiveTab('stats')}
+            className={`${
+              activeTab === 'stats'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Platform Statistics
+          </button>
+          <button
             onClick={() => setActiveTab('users')}
             className={`${
               activeTab === 'users'
@@ -139,7 +150,51 @@ const AdminDashboard = () => {
       </div>
 
       <div className="mt-4">
-        {activeTab === 'users' ? (
+        {activeTab === 'stats' ? (
+          <div className="space-y-6">
+            <BidStats />
+            
+            {/* Additional statistics sections can be added here */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className="bg-white border border-gray-300 rounded-md p-4 text-left hover:bg-gray-50"
+                >
+                  <div className="flex items-center">
+                    <div className="bg-blue-100 rounded-md p-2 mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Manage Users</h4>
+                      <p className="text-xs text-gray-500">View and manage user accounts</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className="bg-white border border-gray-300 rounded-md p-4 text-left hover:bg-gray-50"
+                >
+                  <div className="flex items-center">
+                    <div className="bg-green-100 rounded-md p-2 mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Review Products</h4>
+                      <p className="text-xs text-gray-500">Approve or reject pending products</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'users' ? (
           <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
