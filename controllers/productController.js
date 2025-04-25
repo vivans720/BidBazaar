@@ -243,7 +243,9 @@ exports.deleteProduct = async (req, res) => {
 // @access  Private/Vendor
 exports.getVendorProducts = async (req, res) => {
   try {
-    const products = await Product.find({ vendor: req.user.id });
+    const products = await Product.find({ vendor: req.user.id })
+      .populate('winner', 'name email')
+      .populate('vendor', 'name email');
 
     res.status(200).json({
       success: true,
