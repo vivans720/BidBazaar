@@ -77,4 +77,9 @@ export const getUserBids = () => {
   return api.get('/bids/user');
 };
 
+// Get platform bid statistics
+export const getBidStats = () => {
+  return api.get('/bids/stats');
+};
+
 export default api; 
