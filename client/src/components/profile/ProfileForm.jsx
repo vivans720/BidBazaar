@@ -19,15 +19,21 @@ const ProfileForm = () => {
     name: '',
     email: '',
     phone: '',
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: ''
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: ''
+    }
   });
-
+  
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [isImageSubmitting, setIsImageSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({});
 
   useEffect(() => {
@@ -36,17 +42,106 @@ const ProfileForm = () => {
         name: user.name || '',
         email: user.email || '',
         phone: user.phone || '',
-        street: user.address?.street || '',
-        city: user.address?.city || '',
-        state: user.address?.state || '',
-        zipCode: user.address?.zipCode || '',
-        country: user.address?.country || ''
+        address: {
+          street: user.address?.street || '',
+          city: user.address?.city || '',
+          state: user.address?.state || '',
+          zipCode: user.address?.zipCode || '',
+          country: user.address?.country || ''
+        }
       });
+      
+      // Set profile image preview if exists
+      if (user.profileImage) {
+        setProfileImagePreview(user.profileImage);
+      }
     }
   }, [user]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData({
+        ...formData,
+        address: {
+          ...formData.address,
+          [addressField]: value
+        }
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+  
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    
+    if (file) {
+      // Only accept image files
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+      }
+      
+      // Limit file size to 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+      
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleImageSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!profileImage) {
+      alert('Please select an image to upload');
+      return;
+    }
+    
+    setIsImageSubmitting(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', profileImage);
+      
+      const response = await fetch('/api/users/updateprofileimage', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Update user in context
+        alert('Profile image updated successfully');
+        // Update the user context with new image URL
+        user.profileImage = data.data.profileImage;
+      } else {
+        alert(data.error || 'Failed to update profile image');
+      }
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      alert('An error occurred while updating profile image');
+    } finally {
+      setIsImageSubmitting(false);
+    }
   };
 
   const handleBlur = (e) => {
@@ -65,11 +160,11 @@ const ProfileForm = () => {
         email: formData.email,
         phone: formData.phone,
         address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          country: formData.country
+          street: formData.address.street,
+          city: formData.address.city,
+          state: formData.address.state,
+          zipCode: formData.address.zipCode,
+          country: formData.address.country
         }
       };
 
@@ -122,24 +217,70 @@ const ProfileForm = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">Edit Profile</h3>
-      </div>
-
-      {message.text && (
-        <div className={`mb-6 p-4 rounded-md flex items-start ${message.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
-          {message.type === 'success' ? (
-            <CheckCircleIcon className="h-5 w-5 text-green-400 mt-0.5 mr-2" />
-          ) : (
-            <ExclamationCircleIcon className="h-5 w-5 text-red-400 mt-0.5 mr-2" />
-          )}
-          <p className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
-            {message.text}
-          </p>
-        </div>
-      )}
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit Profile</h2>
       
+      {/* Profile Image Section */}
+      <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">Profile Picture</h3>
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
+            {profileImagePreview ? (
+              <img 
+                src={profileImagePreview} 
+                alt="Profile Preview" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error("Profile image preview load error:", profileImagePreview);
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/150?text=User';
+                }}
+              />
+            ) : user?.profileImage ? (
+              <img 
+                src={user.profileImage} 
+                alt={user.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error("User profile image load error:", user.profileImage);
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/150?text=User';
+                }}
+              />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <form onSubmit={handleImageSubmit} className="space-y-4">
+              <div>
+                <input
+                  type="file"
+                  id="profileImage"
+                  name="profileImage"
+                  onChange={handleImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  accept="image/*"
+                />
+                <p className="mt-1 text-xs text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={!profileImage || isImageSubmitting}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300"
+              >
+                {isImageSubmitting ? 'Uploading...' : 'Upload Image'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      {/* Profile Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
@@ -235,7 +376,7 @@ const ProfileForm = () => {
                     type="text"
                     name="street"
                     id="street"
-                    value={formData.street}
+                    value={formData.address.street}
                     onChange={handleChange}
                     className={`pl-10 ${inputClasses('street')}`}
                   />
@@ -253,7 +394,7 @@ const ProfileForm = () => {
                     type="text"
                     name="city"
                     id="city"
-                    value={formData.city}
+                    value={formData.address.city}
                     onChange={handleChange}
                     className={`pl-10 ${inputClasses('city')}`}
                   />
@@ -270,7 +411,7 @@ const ProfileForm = () => {
                     type="text"
                     name="state"
                     id="state"
-                    value={formData.state}
+                    value={formData.address.state}
                     onChange={handleChange}
                     className={`pl-10 ${inputClasses('state')}`}
                   />
@@ -287,7 +428,7 @@ const ProfileForm = () => {
                     type="text"
                     name="zipCode"
                     id="zipCode"
-                    value={formData.zipCode}
+                    value={formData.address.zipCode}
                     onChange={handleChange}
                     className={`pl-10 ${inputClasses('zipCode')}`}
                   />
@@ -304,7 +445,7 @@ const ProfileForm = () => {
                     type="text"
                     name="country"
                     id="country"
-                    value={formData.country}
+                    value={formData.address.country}
                     onChange={handleChange}
                     className={`pl-10 ${inputClasses('country')}`}
                   />
@@ -314,15 +455,15 @@ const ProfileForm = () => {
           </div>
         </div>
         
-        <div className="flex justify-end">
+        <div className="flex justify-end mt-6">
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              loading ? 'bg-primary-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors`}
+              isSubmitting ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
           >
-            {loading ? (
+            {isSubmitting ? (
               <>
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -335,6 +476,23 @@ const ProfileForm = () => {
             )}
           </button>
         </div>
+        
+        {message.text && (
+          <div className={`mt-4 p-4 rounded-md flex items-start ${message.type === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
+            {message.type === 'success' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400 mt-0.5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            )}
+            <p className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+              {message.text}
+            </p>
+          </div>
+        )}
       </form>
     </div>
   );
