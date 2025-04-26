@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileForm from '../components/profile/ProfileForm';
@@ -23,14 +23,31 @@ const ProfilePage = () => {
   const { isAuthenticated, loading, user } = state;
   const [activeTab, setActiveTab] = useState('info');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isAdmin = user?.role === 'admin';
 
   // Tab configuration with icons and labels
-  const tabs = [
-    { id: 'info', name: 'Account Information', icon: UserCircleIcon },
-    { id: 'bids', name: 'Your Bids', icon: CurrencyRupeeIcon },
-    { id: 'edit', name: 'Edit Profile', icon: PencilIcon },
-    { id: 'password', name: 'Change Password', icon: KeyIcon },
-  ];
+  const getTabs = () => {
+    const allTabs = [
+      { id: 'info', name: 'Account Information', icon: UserCircleIcon },
+      { id: 'bids', name: 'Your Bids', icon: CurrencyRupeeIcon, hideForAdmin: true },
+      { id: 'edit', name: 'Edit Profile', icon: PencilIcon },
+      { id: 'password', name: 'Change Password', icon: KeyIcon },
+    ];
+
+    return isAdmin 
+      ? allTabs.filter(tab => !tab.hideForAdmin) 
+      : allTabs;
+  };
+
+  // Get filtered tabs based on user role
+  const tabs = getTabs();
+
+  // Ensure active tab is valid in case it was hidden due to role change
+  useEffect(() => {
+    if (isAdmin && activeTab === 'bids') {
+      setActiveTab('info');
+    }
+  }, [isAdmin, activeTab]);
 
   if (loading) {
     return (
@@ -69,14 +86,19 @@ const ProfilePage = () => {
             {/* User avatar and info */}
             <div className="flex flex-col items-center mb-8 mt-4">
               <div className="relative">
-                {user?.avatar ? (
+                {user?.profileImage ? (
                   <img
-                    src={user.avatar}
-                    alt="User avatar"
-                    className="h-24 w-24 rounded-full object-cover border-4 border-primary-50"
+                    src={user.profileImage}
+                    alt={`${user.name}'s profile`}
+                    className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-md"
+                    onError={(e) => {
+                      console.error("ProfilePage sidebar image load error:", user.profileImage);
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/150?text=User';
+                    }}
                   />
                 ) : (
-                  <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-primary-50">
+                  <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-white shadow-md">
                     <span className="text-primary-600 text-4xl font-medium">
                       {user?.name?.charAt(0).toUpperCase() || "U"}
                     </span>
@@ -86,6 +108,11 @@ const ProfilePage = () => {
               </div>
               <h2 className="mt-4 text-lg font-semibold text-gray-800">{user?.name || "User"}</h2>
               <p className="text-sm text-gray-500">{user?.email || ""}</p>
+              {isAdmin && (
+                <span className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
+                  Admin
+                </span>
+              )}
             </div>
 
             {/* Navigation */}
@@ -130,16 +157,88 @@ const ProfilePage = () => {
         {/* Main content */}
         <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            {/* Mobile Header */}
+            {/* Mobile Header with Profile */}
             <div className="lg:hidden mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">{tabs.find(tab => tab.id === activeTab)?.name}</h1>
+              <div className="flex items-center mb-4">
+                <div className="relative mr-3">
+                  {user?.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={`${user.name}'s profile`}
+                      className="h-16 w-16 rounded-full object-cover border-2 border-white shadow-md"
+                      onError={(e) => {
+                        console.error("ProfilePage mobile image load error:", user.profileImage);
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/150?text=User';
+                      }}
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center border-2 border-white shadow-md">
+                      <span className="text-primary-600 text-2xl font-medium">
+                        {user?.name?.charAt(0).toUpperCase() || "U"}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-green-400 border-2 border-white"></div>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{user?.name || "User"}</h1>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="mr-2">{tabs.find(tab => tab.id === activeTab)?.name}</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Banner - Desktop Only */}
+            <div className="hidden lg:block mb-6">
+              <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-primary-500 to-primary-600 h-32 relative"></div>
+                <div className="px-6 pb-5 pt-16 relative">
+                  <div className="absolute top-0 left-6 transform -translate-y-1/2 flex items-end">
+                    <div className="relative">
+                      {user?.profileImage ? (
+                        <img
+                          src={user.profileImage}
+                          alt={`${user.name}'s profile`}
+                          className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-lg"
+                          onError={(e) => {
+                            console.error("ProfilePage banner image load error:", user.profileImage);
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/150?text=User';
+                          }}
+                        />
+                      ) : (
+                        <div className="h-32 w-32 rounded-full bg-primary-100 flex items-center justify-center border-4 border-white shadow-lg">
+                          <span className="text-primary-600 text-5xl font-medium">
+                            {user?.name?.charAt(0).toUpperCase() || "U"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 right-1 h-6 w-6 rounded-full bg-green-400 border-2 border-white"></div>
+                    </div>
+                  </div>
+                  <div className="ml-40">
+                    <h2 className="text-2xl font-bold text-gray-900">{user?.name || "User"}</h2>
+                    <p className="text-gray-500">{user?.email || ""}</p>
+                    <div className="mt-1">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Content */}
             <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden transition-all duration-300">
               <div className="p-6">
                 {activeTab === 'info' && <UserInfo />}
-                {activeTab === 'bids' && <UserBids />}
+                {!isAdmin && activeTab === 'bids' && <UserBids />}
                 {activeTab === 'edit' && <ProfileForm />}
                 {activeTab === 'password' && <PasswordForm />}
               </div>
