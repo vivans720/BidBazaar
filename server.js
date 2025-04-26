@@ -6,6 +6,7 @@ const fileUpload = require('express-fileupload');
 const connectDB = require('./config/db');
 const Product = require('./models/productModel');
 const Bid = require('./models/bidModel');
+const path = require('path');
 
 // Load env vars
 dotenv.config();
@@ -35,6 +36,9 @@ app.use(fileUpload({
   responseOnLimit: 'File size is too large. Maximum size is 5MB.',
   createParentPath: true,
 }));
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Enable CORS
 const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -108,6 +112,29 @@ app.use('/api/bids', bidRoutes);
 // Basic route
 app.get('/', (req, res) => {
   res.send('Server is running...');
+});
+
+// Test route for image files
+app.get('/test-image', (req, res) => {
+  const testImagePath = path.join(__dirname, 'uploads/users');
+  const fs = require('fs');
+  fs.readdir(testImagePath, (err, files) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: 'Error reading uploads directory',
+        details: err.message
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Uploads directory contents',
+      files,
+      uploadPath: testImagePath,
+      url: `${req.protocol}://${req.get('host')}/uploads/users/${files[0] || 'no-files'}`
+    });
+  });
 });
 
 // Error handler
