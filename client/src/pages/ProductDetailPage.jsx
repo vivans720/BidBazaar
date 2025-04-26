@@ -5,17 +5,22 @@ import { toast } from 'react-toastify';
 import ProductDetail from '../components/products/ProductDetail';
 import BidComponent from '../components/bids/BidComponent';
 import BidHistory from '../components/bids/BidHistory';
+import { useAuth } from '../context/AuthContext';
 
 // Import these icons if you have Heroicons installed
 // If not, you can install with: npm install @heroicons/react/24/outline @heroicons/react/24/solid
 import { 
   ArrowLeftIcon, 
   ClockIcon, 
-  ExclamationTriangleIcon 
+  ExclamationTriangleIcon,
+  ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
+  const { state } = useAuth();
+  const { user } = state;
+  const isAdmin = user?.role === 'admin';
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -182,7 +187,7 @@ const ProductDetailPage = () => {
             {/* Sticky container for bid form on desktop */}
             <div className="lg:sticky lg:top-6">
               {/* Bid Form */}
-              {product && product.status === 'active' && (
+              {product && product.status === 'active' && !isAdmin && (
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
                   <BidComponent 
                     productId={product._id} 
@@ -190,6 +195,19 @@ const ProductDetailPage = () => {
                     startingPrice={product.startingPrice} 
                     refreshProduct={refreshProduct}
                   />
+                </div>
+              )}
+              
+              {/* Admin Cannot Bid Message */}
+              {product && product.status === 'active' && isAdmin && (
+                <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Administrator Access</h3>
+                  <div className="bg-purple-50 rounded-lg p-4 flex">
+                    <ShieldExclamationIcon className="h-5 w-5 text-purple-400 mr-2 flex-shrink-0" />
+                    <p className="text-purple-700 text-sm">
+                      As an administrator, you can view but cannot place bids on auctions. This ensures fairness and transparency in the bidding process.
+                    </p>
+                  </div>
                 </div>
               )}
               
