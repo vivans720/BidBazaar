@@ -1,6 +1,8 @@
 const User = require('../models/userModel');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -14,7 +16,7 @@ exports.register = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-    // Check if user exists
+    // Check if user already exists
     let user = await User.findOne({ email });
 
     if (user) {
@@ -24,16 +26,63 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create user
-    user = await User.create({
+    // Create user object
+    const userData = {
       name,
       email,
       password,
-      role: role || 'buyer' // Default to buyer if no role specified
-    });
+      role: role || 'buyer' // Default to buyer if role not specified
+    };
 
-    sendTokenResponse(user, 201, res);
+    // Handle profile image upload if provided
+    if (req.files && req.files.profileImage) {
+      const file = req.files.profileImage;
+
+      // Make sure the image is a photo
+      if (!file.mimetype.startsWith('image')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please upload an image file'
+        });
+      }
+
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({
+          success: false,
+          error: 'Image must be less than 5MB'
+        });
+      }
+
+      // Create upload directory if it doesn't exist
+      const uploadDir = './uploads/users';
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Create custom filename
+      const fileName = `user-${Date.now()}${path.parse(file.name).ext}`;
+      
+      // Move file to upload directory
+      await file.mv(`${uploadDir}/${fileName}`);
+      
+      // Set profile image path with absolute URL
+      const profileImageUrl = `${req.protocol}://${req.get('host')}/uploads/users/${fileName}`;
+      userData.profileImage = profileImageUrl;
+    }
+
+    // Create user
+    user = await User.create(userData);
+
+    // Generate JWT token
+    const token = user.getSignedJwtToken();
+
+    res.status(201).json({
+      success: true,
+      token
+    });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({
       success: false,
       error: 'Server Error'
