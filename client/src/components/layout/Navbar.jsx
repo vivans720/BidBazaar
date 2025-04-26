@@ -8,8 +8,8 @@ import logo from '../../assets/logo.png';
 // Navigation items configuration
 const getNavigation = (isAuthenticated, userRole) => [
   { name: 'Home', href: isAuthenticated ? '/dashboard' : '/', public: true },
-  { name: 'Auctions', href: '/products', public: false, hideForAdmin: true },
-  { name: 'My Bids', href: '/bids', public: false, hideForAdmin: true },
+  { name: 'Auctions', href: '/products', public: false, hideForAdmin: true, hideForVendor: true },
+  { name: 'My Bids', href: '/bids', public: false, hideForAdmin: true, hideForVendor: true },
   { name: 'Dashboard', href: '/dashboard', public: false },
 ];
 
@@ -22,12 +22,15 @@ const Navbar = () => {
   const { isAuthenticated, user } = state;
   const location = useLocation();
   const isAdmin = user?.role === 'admin';
+  const isVendor = user?.role === 'vendor';
 
   // Get navigation items based on authentication status and user role
   const navigationItems = getNavigation(isAuthenticated, user?.role);
   
   const filteredNavigation = navigationItems.filter(
-    item => (item.public || isAuthenticated) && !(isAdmin && item.hideForAdmin)
+    item => (item.public || isAuthenticated) && 
+    !(isAdmin && item.hideForAdmin) &&
+    !(isVendor && item.hideForVendor)
   );
 
   // Home URL changes based on authentication status
@@ -151,7 +154,7 @@ const Navbar = () => {
                               </Link>
                             )}
                           </Menu.Item>
-                          {!isAdmin && (
+                          {!isAdmin && !isVendor && (
                             <Menu.Item>
                               {({ active }) => (
                                 <Link
