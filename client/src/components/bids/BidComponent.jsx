@@ -4,6 +4,16 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
+// Import icons (if not already imported)
+import { 
+  CurrencyRupeeIcon, 
+  ArrowTrendingUpIcon,
+  ChevronUpIcon,
+  InformationCircleIcon,
+  ShieldCheckIcon,
+  ArrowRightIcon
+} from '@heroicons/react/24/outline';
+
 const BidComponent = ({ productId, currentPrice, refreshProduct, startingPrice }) => {
   const [bidAmount, setBidAmount] = useState('');
   const [bids, setBids] = useState([]);
@@ -11,6 +21,7 @@ const BidComponent = ({ productId, currentPrice, refreshProduct, startingPrice }
   const [isLoadingBids, setIsLoadingBids] = useState(false);
   const [errorDetails, setErrorDetails] = useState(null);
   const [validBidAmounts, setValidBidAmounts] = useState([]);
+  const [showBidTips, setShowBidTips] = useState(false);
   const { state, user, isAuthenticated } = useAuth();
 
   // Format price function
@@ -97,7 +108,7 @@ const BidComponent = ({ productId, currentPrice, refreshProduct, startingPrice }
     }
     
     if (!bidAmount || parseFloat(bidAmount) <= 0) {
-      toast.error('Please enter a valid bid amount');
+      toast.error('Please select a valid bid amount');
       return;
     }
 
@@ -152,21 +163,72 @@ const BidComponent = ({ productId, currentPrice, refreshProduct, startingPrice }
   const minimumBid = getNextValidBidAmount();
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold mb-4">Place Your Bid</h3>
+    <div className="p-6">
+      <div className="flex flex-col items-start mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Place Your Bid</h3>
+        <div className="flex justify-between items-center w-full">
+          <p className="text-sm text-gray-500">Bid now to win this auction</p>
+          <button 
+            onClick={() => setShowBidTips(!showBidTips)} 
+            className="text-primary-600 text-sm font-medium flex items-center hover:text-primary-800 focus:outline-none"
+          >
+            <InformationCircleIcon className="w-4 h-4 mr-1" />
+            Bidding tips
+          </button>
+        </div>
+      </div>
       
+      {/* Bidding Tips */}
+      {showBidTips && (
+        <div className="bg-primary-50 rounded-lg p-4 mb-6 border border-primary-100">
+          <h4 className="text-sm font-medium text-primary-900 mb-2 flex items-center">
+            <ShieldCheckIcon className="w-4 h-4 mr-1 text-primary-600" />
+            Bidding Tips
+          </h4>
+          <ul className="text-xs text-primary-700 space-y-1 pl-6 list-disc">
+            <li>Bids must increase in 5% increments from the base price</li>
+            <li>Your bid is binding - you agree to purchase the item if you win</li>
+            <li>Set a higher bid to increase your chances of winning</li>
+            <li>You'll receive a notification if someone outbids you</li>
+          </ul>
+        </div>
+      )}
+
+      {/* Current Price Display */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-gray-500">Current bid</p>
+            <p className="text-2xl font-bold text-gray-900">{formatPrice(currentPrice)}</p>
+          </div>
+          <div className="bg-primary-50 text-primary-800 px-3 py-1 rounded-full text-xs font-medium border border-primary-100">
+            {bids.length} {bids.length === 1 ? 'bid' : 'bids'} placed
+          </div>
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-200 flex items-center">
+          <ArrowTrendingUpIcon className="h-4 w-4 text-gray-400 mr-1" />
+          <span className="text-xs text-gray-500">
+            Minimum next bid: <span className="font-medium text-primary-600">{formatPrice(minimumBid)}</span>
+          </span>
+        </div>
+      </div>
+
       {isAuthenticated ? (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
-              Bid Amount (₹)
+              Your bid amount
             </label>
-            <div className="flex space-x-2">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <CurrencyRupeeIcon className="h-5 w-5 text-gray-400" />
+              </div>
+
               <select
                 id="bidAmount"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 shadow-sm"
                 required
               >
                 <option value="">Select a bid amount</option>
@@ -174,89 +236,63 @@ const BidComponent = ({ productId, currentPrice, refreshProduct, startingPrice }
                   .filter(amount => amount > currentPrice)
                   .slice(0, 10) // Limit to 10 options
                   .map((amount, index) => (
-                    <option key={index} value={amount}>
-                      {formatPrice(amount)}
+                    <option key={index} value={amount} className={index === 0 ? 'font-medium text-primary-700' : ''}>
+                      {formatPrice(amount)} {index === 0 ? '(Minimum bid)' : ''}
                     </option>
                   ))
                 }
               </select>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                {isLoading ? 'Bidding...' : 'Place Bid'}
-              </button>
+              
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Current Highest: {formatPrice(currentPrice)}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Next Valid Bid: {formatPrice(minimumBid)} (5% increments from base price)
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Base price: {formatPrice(startingPrice)} • Increment: {formatPrice(Math.ceil(startingPrice * 0.05))}
-            </p>
             
-            {/* Show user role for debugging */}
-            <p className="text-xs text-green-600 mt-1">
-              Logged in as: {user?.name} ({user?.role})
+            <p className="mt-1 text-xs text-gray-500">
+              Bid in increments of {formatPrice(Math.ceil(startingPrice * 0.05))}
             </p>
           </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                Place Bid
+              </>
+            )}
+          </button>
+          
+          {errorDetails && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-md border border-red-100">
+              <p className="font-medium">{errorDetails.message}</p>
+              {errorDetails.status === 401 && (
+                <p className="mt-1">Please try logging in again to resolve this issue.</p>
+              )}
+            </div>
+          )}
         </form>
       ) : (
-        <div className="bg-yellow-50 p-3 rounded-md">
-          <p className="text-yellow-700">Please <Link to="/login" className="font-medium text-yellow-800 underline">log in</Link> to place a bid on this product.</p>
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <p className="text-sm text-blue-700 mb-3">Sign in to place a bid on this item</p>
+          <Link 
+            to="/login" 
+            className="block w-full text-center bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg text-sm font-medium focus:outline-none transition-colors"
+          >
+            Sign in to Bid <ArrowRightIcon className="inline-block h-4 w-4 ml-1" />
+          </Link>
         </div>
       )}
-      
-      {errorDetails && (
-        <div className="mt-3 p-3 bg-red-50 rounded-md">
-          <h5 className="font-medium text-red-800">Error Details</h5>
-          <p className="text-sm text-red-700">{errorDetails.message}</p>
-          {errorDetails.status && (
-            <p className="text-xs text-red-600">Status Code: {errorDetails.status}</p>
-          )}
-          <p className="text-xs text-red-600 mt-1">
-            Auth State: {errorDetails.authState.isAuthenticated ? 'Authenticated' : 'Not Authenticated'}, 
-            Token: {errorDetails.authState.hasToken ? 'Present' : 'Missing'}, 
-            Role: {errorDetails.authState.userRole}
-          </p>
-          <div className="mt-2">
-            <Link to="/debug" className="text-xs text-blue-600 underline">
-              Debug Authentication
-            </Link>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6">
-        <h4 className="text-md font-medium mb-2">Recent Bids</h4>
-        {isLoadingBids ? (
-          <p className="text-gray-500 text-sm">Loading bids...</p>
-        ) : bids.length > 0 ? (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {bids.slice(0, 5).map((bid, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <div className="text-sm">
-                  <span className="font-medium">{bid.bidder.name}</span>
-                  <span className="text-gray-500 text-xs ml-2">
-                    {new Date(bid.createdAt).toLocaleString()}
-                  </span>
-                </div>
-                <div className="font-semibold">{formatPrice(bid.amount)}</div>
-              </div>
-            ))}
-            {bids.length > 5 && (
-              <p className="text-sm text-gray-500 text-center">
-                + {bids.length - 5} more bids
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-gray-500 text-sm">No bids yet. Be the first to bid!</p>
-        )}
-      </div>
     </div>
   );
 };
