@@ -19,6 +19,9 @@ const RegisterForm = () => {
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { state, register, clearErrors } = useAuth();
   const navigate = useNavigate();
@@ -108,10 +111,34 @@ const RegisterForm = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    
+    if (file) {
+      // Only accept image files
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+      }
+      
+      // Limit file size to 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+      
+      setProfileImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -119,22 +146,22 @@ const RegisterForm = () => {
     clearErrors();
 
     if (validateForm()) {
-      try {
-        const { name, email, password, role } = formData;
-        console.log('Submitting registration form with role:', role);
-        
-        await register({ name, email, password, role });
-        
-        // Wait for user data to be loaded before navigating
-        if (state.isAuthenticated && state.user) {
-          console.log('Registration successful, navigating to dashboard');
-          navigate('/dashboard');
-        }
-        
-      } catch (error) {
-        console.error('Registration error in component:', error);
-        // Error is already handled by the context
+      setIsSubmitting(true);
+      
+      // Create FormData object for file upload
+      const formDataObj = new FormData();
+      const { name, email, password, role } = formData;
+      formDataObj.append('name', name);
+      formDataObj.append('email', email);
+      formDataObj.append('password', password);
+      formDataObj.append('role', role);
+      
+      if (profileImage) {
+        formDataObj.append('profileImage', profileImage);
       }
+      
+      await register(formDataObj);
+      setIsSubmitting(false);
     } else {
       console.log('Form validation failed');
     }
@@ -313,49 +340,58 @@ const RegisterForm = () => {
           <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
             I want to
           </label>
-          <div className="flex space-x-4">
-            <div 
-              className={`flex-1 border rounded-md p-3 flex flex-col items-center cursor-pointer transition-all ${
-                formData.role === 'buyer' 
-                  ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onClick={() => setFormData({...formData, role: 'buyer'})}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <span className="text-sm font-medium">Buy Products</span>
-            </div>
-            <div 
-              className={`flex-1 border rounded-md p-3 flex flex-col items-center cursor-pointer transition-all ${
-                formData.role === 'vendor' 
-                  ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onClick={() => setFormData({...formData, role: 'vendor'})}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="text-sm font-medium">Sell Products</span>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="buyer">Buy Products</option>
+            <option value="vendor">Sell Products</option>
+          </select>
+        </div>
+        
+        <div>
+          <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1">
+            Profile Picture (Optional)
+          </label>
+          <div className="flex items-center space-x-4">
+            {profileImagePreview && (
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100">
+                <img 
+                  src={profileImagePreview} 
+                  alt="Profile Preview" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <input
+                type="file"
+                id="profileImage"
+                name="profileImage"
+                onChange={handleImageChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                accept="image/*"
+              />
+              <p className="mt-1 text-xs text-gray-500">Max file size: 5MB. Supported formats: JPG, PNG, GIF</p>
             </div>
           </div>
-          <input type="hidden" name="role" value={formData.role} />
         </div>
 
         <div>
           <button
             type="submit"
             className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-            disabled={state.loading}
+            disabled={state.loading || isSubmitting}
           >
             <span className="absolute left-0 inset-y-0 flex items-center pl-3">
               <svg className="h-5 w-5 text-primary-500 group-hover:text-primary-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
             </span>
-            {state.loading ? (
+            {isSubmitting ? (
               <>
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
