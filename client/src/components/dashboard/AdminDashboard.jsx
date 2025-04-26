@@ -4,15 +4,28 @@ import { toast } from 'react-toastify';
 import ProductDetail from '../products/ProductDetail';
 import { useAuth } from '../../context/AuthContext';
 import BidStats from './BidStats';
+import { 
+  UserCircleIcon, 
+  TrashIcon, 
+  PencilIcon, 
+  KeyIcon, 
+  ShieldExclamationIcon,
+  MagnifyingGlassIcon,
+  PlusCircleIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
   const { state } = useAuth();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [activeTab, setActiveTab] = useState('stats');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     console.log('Auth State:', {
@@ -33,16 +46,30 @@ const AdminDashboard = () => {
     fetchData();
   }, [activeTab, state.user]);
 
+  // Filter users when search query changes
+  useEffect(() => {
+    if (users.length > 0) {
+      const filtered = users.filter(user => 
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchQuery, users]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
+      setIsRefreshing(true);
       
       if (activeTab === 'users') {
         console.log('Fetching users...');
         const res = await api.get('/users');
         console.log('Users response:', res.data);
         setUsers(res.data.data);
+        setFilteredUsers(res.data.data);
       } else {
         console.log('Fetching pending products...');
         const res = await api.get('/products?status=pending');
@@ -51,11 +78,13 @@ const AdminDashboard = () => {
       }
       
       setLoading(false);
+      setIsRefreshing(false);
     } catch (err) {
       console.error('Error fetching data:', err.response?.data || err.message);
       setError(err.response?.data?.error || 'Failed to fetch data');
       toast.error(err.response?.data?.error || 'Failed to fetch data');
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -63,6 +92,7 @@ const AdminDashboard = () => {
     try {
       await api.delete(`/users/${userId}`);
       setUsers(users.filter(user => user._id !== userId));
+      setFilteredUsers(filteredUsers.filter(user => user._id !== userId));
       toast.success('User deleted successfully');
     } catch (err) {
       console.error('Error deleting user:', err.response?.data || err.message);
@@ -87,8 +117,25 @@ const AdminDashboard = () => {
     }
   };
 
+  // Get role badge color
+  const getRoleBadgeClass = (role) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-purple-100 text-purple-800 border border-purple-200';
+      case 'vendor':
+        return 'bg-green-100 text-green-800 border border-green-200';
+      default:
+        return 'bg-blue-100 text-blue-800 border border-blue-200';
+    }
+  };
+
   if (loading) {
-    return <div className="text-center py-4">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+        <span className="ml-3 text-gray-700 font-medium">Loading dashboard...</span>
+      </div>
+    );
   }
 
   if (error) {
@@ -195,62 +242,154 @@ const AdminDashboard = () => {
             </div>
           </div>
         ) : activeTab === 'users' ? (
-          <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th scope="col" className="relative px-6 py-3">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : user.role === 'vendor'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.phone || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="bg-white shadow-sm rounded-lg">
+            {/* User Management Header */}
+            <div className="border-b border-gray-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between space-y-3 md:space-y-0">
+              <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
+              
+              <div className="flex space-x-3">
+                {/* Search Bar */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="Search users..."
+                    value={searchQuery || ''}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                
+                {/* Refresh Button */}
+                <button 
+                  onClick={fetchData}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </button>
+                
+                {/* Add New User Button */}
+                <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Add User
+                </button>
+              </div>
+            </div>
+            
+            {/* User Cards */}
+            <div className="p-6">
+              {filteredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {searchQuery ? 'Try a different search term' : 'There are no users to display'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredUsers.map((user) => (
+                    <div key={user.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                      <div className="p-5">
+                        <div className="flex items-center mb-4">
+                          {/* User Avatar */}
+                          <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 overflow-hidden mr-4">
+                            {user.avatar ? (
+                              <img 
+                                src={user.avatar} 
+                                alt={`${user.name}'s avatar`}
+                                className="h-full w-full object-cover" 
+                              />
+                            ) : (
+                              <span className="text-xl font-medium">{user.name.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base font-medium text-gray-900 truncate">{user.name}</h3>
+                            <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                          </div>
+                          
+                          {/* Role Badge */}
+                          <span className={`ml-2 px-2.5 py-1 text-xs font-medium rounded-full ${
+                            user.role === 'admin'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : user.role === 'vendor'
+                              ? 'bg-green-100 text-green-800 border border-green-200'
+                              : 'bg-blue-100 text-blue-800 border border-blue-200'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </div>
+                        
+                        {/* Additional Info */}
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                          <div className="col-span-2">
+                            <span className="block text-xs text-gray-500">Phone</span>
+                            <span className="font-medium text-gray-900">{user.phone || 'N/A'}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div className="mt-4 flex space-x-2 justify-end">
+                          <button 
+                            className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-full transition-colors"
+                            title="Edit User"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          
+                          <button 
+                            className="p-2 text-gray-500 hover:text-yellow-600 hover:bg-gray-100 rounded-full transition-colors"
+                            title="Reset Password"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                          </button>
+                          
+                          {user.role !== 'admin' && (
+                            <button 
+                              className="p-2 text-gray-500 hover:text-purple-600 hover:bg-gray-100 rounded-full transition-colors"
+                              title="Make Admin"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </button>
+                          )}
+                          
+                          <button 
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-full transition-colors"
+                            title="Delete User"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
