@@ -6,7 +6,8 @@ const {
   updateUser,
   deleteUser,
   getMe,
-  updateProfile
+  updateProfile,
+  updateProfileImage
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -25,6 +26,7 @@ router.put(
   ],
   updateProfile
 );
+router.put('/updateprofileimage', updateProfileImage);
 
 // Admin only routes
 router.use(authorize('admin'));
