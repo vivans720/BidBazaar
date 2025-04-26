@@ -6,10 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
 
 // Navigation items configuration
-const getNavigation = (isAuthenticated) => [
+const getNavigation = (isAuthenticated, userRole) => [
   { name: 'Home', href: isAuthenticated ? '/dashboard' : '/', public: true },
-  { name: 'Auctions', href: '/products', public: false },
-  { name: 'My Bids', href: '/bids', public: false },
+  { name: 'Auctions', href: '/products', public: false, hideForAdmin: true },
+  { name: 'My Bids', href: '/bids', public: false, hideForAdmin: true },
   { name: 'Dashboard', href: '/dashboard', public: false },
 ];
 
@@ -21,12 +21,13 @@ const Navbar = () => {
   const { state, logout } = useAuth();
   const { isAuthenticated, user } = state;
   const location = useLocation();
+  const isAdmin = user?.role === 'admin';
 
-  // Get navigation items based on authentication status
-  const navigationItems = getNavigation(isAuthenticated);
+  // Get navigation items based on authentication status and user role
+  const navigationItems = getNavigation(isAuthenticated, user?.role);
   
   const filteredNavigation = navigationItems.filter(
-    item => item.public || isAuthenticated
+    item => (item.public || isAuthenticated) && !(isAdmin && item.hideForAdmin)
   );
 
   // Home URL changes based on authentication status
@@ -104,11 +105,16 @@ const Navbar = () => {
                       <div>
                         <Menu.Button className="flex rounded-full bg-primary-500 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600">
                           <span className="sr-only">Open user menu</span>
-                          {user?.avatar ? (
+                          {user?.profileImage ? (
                             <img
-                              className="h-8 w-8 rounded-full"
-                              src={user.avatar}
-                              alt="User avatar"
+                              className="h-8 w-8 rounded-full object-cover border-2 border-white"
+                              src={user.profileImage}
+                              alt={`${user.name}'s profile`}
+                              onError={(e) => {
+                                console.error("Navbar profile image load error:", user.profileImage);
+                                e.target.onerror = null;
+                                e.target.src = 'https://via.placeholder.com/150?text=User';
+                              }}
                             />
                           ) : (
                             <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-primary-700 text-sm font-medium">
@@ -145,22 +151,24 @@ const Navbar = () => {
                               </Link>
                             )}
                           </Menu.Item>
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                to="/bids"
-                                className={classNames(
-                                  active ? 'bg-gray-50' : '',
-                                  'flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
-                                )}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                My Bids
-                              </Link>
-                            )}
-                          </Menu.Item>
+                          {!isAdmin && (
+                            <Menu.Item>
+                              {({ active }) => (
+                                <Link
+                                  to="/bids"
+                                  className={classNames(
+                                    active ? 'bg-gray-50' : '',
+                                    'flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
+                                  )}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  My Bids
+                                </Link>
+                              )}
+                            </Menu.Item>
+                          )}
                           <Menu.Item>
                             {({ active }) => (
                               <Link
