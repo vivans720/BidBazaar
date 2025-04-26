@@ -1,5 +1,7 @@
 const User = require('../models/userModel');
 const { validationResult } = require('express-validator');
+const path = require('path');
+const fs = require('fs');
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -218,6 +220,83 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Server Error'
+    });
+  }
+};
+
+// @desc    Update user profile image
+// @route   PUT /api/users/updateprofileimage
+// @access  Private
+exports.updateProfileImage = async (req, res) => {
+  try {
+    // Check if file was uploaded
+    if (!req.files || !req.files.profileImage) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please upload an image'
+      });
+    }
+
+    const file = req.files.profileImage;
+
+    // Make sure the image is a photo
+    if (!file.mimetype.startsWith('image')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please upload an image file'
+      });
+    }
+
+    // Check file size (limit to 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: 'Image must be less than 5MB'
+      });
+    }
+
+    // Create custom filename
+    const fileName = `user-${req.user.id}-${Date.now()}${path.parse(file.name).ext}`;
+
+    // Ensure uploads directory exists
+    const uploadDir = './uploads/users';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Move file to upload directory
+    file.mv(`${uploadDir}/${fileName}`, async (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({
+          success: false,
+          error: 'Problem with file upload'
+        });
+      }
+
+      // Update user's profile image field in the database
+      // Use absolute URL for profile image
+      const profileImageUrl = `${req.protocol}://${req.get('host')}/uploads/users/${fileName}`;
+      
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { profileImage: profileImageUrl },
+        {
+          new: true,
+          runValidators: true
+        }
+      ).select('-password');
+
+      res.status(200).json({
+        success: true,
+        data: user
+      });
+    });
+  } catch (error) {
+    console.error('Profile image upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
     });
   }
 };
