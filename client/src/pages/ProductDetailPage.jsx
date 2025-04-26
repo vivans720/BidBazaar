@@ -21,6 +21,7 @@ const ProductDetailPage = () => {
   const { state } = useAuth();
   const { user } = state;
   const isAdmin = user?.role === 'admin';
+  const isVendor = user?.role === 'vendor';
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -187,7 +188,7 @@ const ProductDetailPage = () => {
             {/* Sticky container for bid form on desktop */}
             <div className="lg:sticky lg:top-6">
               {/* Bid Form */}
-              {product && product.status === 'active' && !isAdmin && (
+              {product && product.status === 'active' && !isAdmin && !isVendor && (
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
                   <BidComponent 
                     productId={product._id} 
@@ -206,6 +207,19 @@ const ProductDetailPage = () => {
                     <ShieldExclamationIcon className="h-5 w-5 text-purple-400 mr-2 flex-shrink-0" />
                     <p className="text-purple-700 text-sm">
                       As an administrator, you can view but cannot place bids on auctions. This ensures fairness and transparency in the bidding process.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Vendor Cannot Bid Message */}
+              {product && product.status === 'active' && isVendor && (
+                <div className="bg-white rounded-xl shadow-md overflow-hidden p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Vendor Access</h3>
+                  <div className="bg-orange-50 rounded-lg p-4 flex">
+                    <ShieldExclamationIcon className="h-5 w-5 text-orange-400 mr-2 flex-shrink-0" />
+                    <p className="text-orange-700 text-sm">
+                      As a vendor, you can view but cannot place bids on auctions. This ensures fair competition and prevents conflicts of interest.
                     </p>
                   </div>
                 </div>
