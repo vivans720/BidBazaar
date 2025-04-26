@@ -3,9 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import ImageModal from './ImageModal';
 
+// Import icons (if not already imported)
+import { 
+  ClockIcon, 
+  TagIcon, 
+  CurrencyRupeeIcon, 
+  UserIcon, 
+  CheckBadgeIcon,
+  CalendarIcon,
+  InformationCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+
 const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [auctionStatus, setAuctionStatus] = useState(product.status);
   const [timeLeft, setTimeLeft] = useState('');
   
@@ -44,22 +58,37 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
     }
   };
 
-  const handleImageClick = (image) => {
+  const handleImageClick = (image, index) => {
     setSelectedImage(image);
+    setCurrentImageIndex(index);
+  };
+
+  const nextImage = () => {
+    if (product.images.length > 1) {
+      const newIndex = (currentImageIndex + 1) % product.images.length;
+      setCurrentImageIndex(newIndex);
+    }
+  };
+
+  const prevImage = () => {
+    if (product.images.length > 1) {
+      const newIndex = (currentImageIndex - 1 + product.images.length) % product.images.length;
+      setCurrentImageIndex(newIndex);
+    }
   };
 
   const getStatusBadgeClasses = (status) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border border-green-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border border-red-200';
       case 'ended':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
@@ -73,215 +102,229 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
   };
 
   return (
-    <>
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Product Details</h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Detailed information about the product listing
-          </p>
+    <div className="overflow-hidden">
+      {/* Product Header */}
+      <div className="px-6 py-6 bg-white">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className={`px-3 py-1 inline-flex text-sm font-medium rounded-full ${getStatusBadgeClasses(auctionStatus)}`}>
+            {auctionStatus.charAt(0).toUpperCase() + auctionStatus.slice(1)}
+          </span>
+          <span className="text-gray-500 text-sm">
+            <span className="inline-flex items-center">
+              <UserIcon className="h-4 w-4 mr-1" />
+              Sold by {product.vendor.name}
+            </span>
+          </span>
+          <span className="text-gray-500 text-sm">
+            <span className="inline-flex items-center">
+              <TagIcon className="h-4 w-4 mr-1" />
+              <span className="capitalize">{product.category}</span>
+            </span>
+          </span>
         </div>
-        
-        <div className="border-t border-gray-200">
-          <dl>
-            {/* Product Images */}
-            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Images</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                <div className="flex space-x-4 overflow-x-auto">
-                  {product.images.map((image, index) => (
-                    <img
-                      key={index}
-                      src={image.url}
-                      alt={`Product ${index + 1}`}
-                      className="h-32 w-32 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
-                      onClick={() => handleImageClick(image)}
-                    />
-                  ))}
+      </div>
+
+      {/* Image Gallery */}
+      <div className="flex flex-col md:flex-row">
+        <div className="md:w-1/2 p-6">
+          <div className="relative aspect-w-1 aspect-h-1 bg-gray-100 rounded-xl overflow-hidden mb-4">
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={product.images[currentImageIndex].url}
+                alt={`${product.title} - Image ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover object-center"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                No image available
+              </div>
+            )}
+
+            {/* Navigation Arrows (if multiple images) */}
+            {product.images && product.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-md text-gray-800 hover:bg-white focus:outline-none"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 rounded-full p-2 shadow-md text-gray-800 hover:bg-white focus:outline-none"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </>
+            )}
+
+            {/* Click to enlarge */}
+            <button
+              onClick={() => product.images && product.images.length > 0 && handleImageClick(product.images[currentImageIndex], currentImageIndex)}
+              className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1 rounded-full hover:bg-black/80 focus:outline-none"
+            >
+              Click to enlarge
+            </button>
+          </div>
+
+          {/* Thumbnails */}
+          {product.images && product.images.length > 1 && (
+            <div className="flex space-x-2 overflow-x-auto pb-2">
+              {product.images.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+                    index === currentImageIndex ? 'border-primary-500' : 'border-transparent hover:border-gray-300'
+                  }`}
+                >
+                  <img
+                    src={image.url}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover object-center"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Product Info */}
+        <div className="md:w-1/2 p-6 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-100">
+          {/* Pricing Section */}
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <div className="mb-4">
+              <h2 className="text-sm font-medium text-gray-500 mb-1">Starting Price</h2>
+              <div className="text-2xl font-bold text-gray-900 flex items-center">
+                <CurrencyRupeeIcon className="h-5 w-5 text-gray-500 mr-1" />
+                {formatPrice(product.startingPrice).replace('₹', '')}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-medium text-gray-500 mb-1">
+                {auctionStatus === 'ended' ? 'Final Price' : 'Current Bid'}
+              </h2>
+              <div className="text-3xl font-bold text-primary-600 flex items-center">
+                <CurrencyRupeeIcon className="h-6 w-6 text-primary-500 mr-1" />
+                {formatPrice(product.currentPrice).replace('₹', '')}
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900 mb-3">Description</h2>
+            <p className="text-gray-700 whitespace-pre-line">{product.description}</p>
+          </div>
+
+          {/* Auction Details */}
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900 mb-3">Auction Details</h2>
+            <ul className="space-y-3">
+              <li className="flex items-start">
+                <CalendarIcon className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
+                <div>
+                  <span className="block text-sm font-medium text-gray-500">Start Time</span>
+                  <span className="block text-gray-900">
+                    {format(new Date(product.startTime), 'PPpp')}
+                  </span>
                 </div>
-              </dd>
-            </div>
-
-            {/* Basic Info */}
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Title</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{product.title}</dd>
-            </div>
-
-            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Category</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 capitalize">{product.category}</dd>
-            </div>
-
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Description</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{product.description}</dd>
-            </div>
-
-            {/* Pricing Info */}
-            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Starting Price</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatPrice(product.startingPrice)}</dd>
-            </div>
-
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">
-                {auctionStatus === 'ended' ? 'Final Price' : 'Current Price'}
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{formatPrice(product.currentPrice)}</dd>
-            </div>
-
-            {/* Auction Info */}
-            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Start Time</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {format(new Date(product.startTime), 'PPpp')}
-              </dd>
-            </div>
-
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">End Time</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                <div className="flex items-center">
-                  <span>{format(new Date(product.endTime), 'PPpp')}</span>
+              </li>
+              <li className="flex items-start">
+                <ClockIcon className="h-5 w-5 text-gray-400 mr-2 mt-0.5" />
+                <div>
+                  <span className="block text-sm font-medium text-gray-500">End Time</span>
+                  <span className="block text-gray-900">
+                    {format(new Date(product.endTime), 'PPpp')}
+                  </span>
                   {auctionStatus === 'active' && (
-                    <span className="ml-2 text-sm text-primary-600 font-medium">
+                    <span className="block mt-1 text-sm text-primary-600 font-medium">
                       ({timeLeft})
                     </span>
                   )}
                 </div>
-              </dd>
-            </div>
+              </li>
+            </ul>
+          </div>
 
-            {/* Status Info */}
-            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Status</dt>
-              <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClasses(auctionStatus)}`}>
-                  {auctionStatus.charAt(0).toUpperCase() + auctionStatus.slice(1)}
-                </span>
-              </dd>
-            </div>
-
-            {/* Vendor/Seller Info */}
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">
-                {auctionStatus === 'ended' ? 'Sold By' : 'Vendor'}
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                {product.vendor.name}
-                {product.vendor.email && (
-                  <span className="text-gray-500 ml-2">({product.vendor.email})</span>
-                )}
-              </dd>
-            </div>
-
-            {/* Buyer Info (Only for ended auctions with a winner) */}
-            {auctionStatus === 'ended' && product.winner && (
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Bought By</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {product.winner.name}
-                  {product.winner.email && (
-                    <span className="text-gray-500 ml-2">({product.winner.email})</span>
-                  )}
-                </dd>
-              </div>
-            )}
-
-            {/* Auction Result (For ended auctions) */}
-            {auctionStatus === 'ended' && (
-              <div className={`${product.winner ? 'bg-green-50' : 'bg-yellow-50'} px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6`}>
-                <dt className="text-sm font-medium text-gray-500">Auction Result</dt>
-                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
-                  {product.winner ? (
-                    <span className="text-green-700">
-                      Auction completed successfully. The item was sold for {formatPrice(product.currentPrice)}.
-                    </span>
-                  ) : (
-                    <span className="text-yellow-700">
-                      Auction ended with no bids.
-                    </span>
-                  )}
-                </dd>
-              </div>
-            )}
-
-            {/* Transaction Summary (For completed sales) */}
-            {auctionStatus === 'ended' && product.winner && (
-              <div className="bg-green-50 px-4 py-5 sm:px-6 border-t border-green-100">
-                <h4 className="text-lg font-medium text-green-800 mb-4">Transaction Summary</h4>
-                <div className="bg-white shadow overflow-hidden rounded-lg border border-green-200">
-                  <div className="px-4 py-4 sm:px-6 flex items-center justify-between bg-green-50">
-                    <div>
-                      <h5 className="text-sm font-medium text-green-900">Auction ID: {product._id}</h5>
-                      <p className="text-xs text-green-700">Completed on {format(new Date(product.endTime), 'PPpp')}</p>
+          {/* Auction Result (For ended auctions) */}
+          {auctionStatus === 'ended' && (
+            <div className={`p-4 rounded-lg ${product.winner ? 'bg-green-50 border border-green-100' : 'bg-yellow-50 border border-yellow-100'} mb-6`}>
+              <h2 className="text-lg font-medium text-gray-900 mb-2 flex items-center">
+                {product.winner 
+                  ? <><CheckBadgeIcon className="h-5 w-5 text-green-500 mr-1" /> Auction Completed</>
+                  : <><InformationCircleIcon className="h-5 w-5 text-yellow-500 mr-1" /> Auction Ended</>
+                }
+              </h2>
+              <p className={product.winner ? 'text-green-700' : 'text-yellow-700'}>
+                {product.winner 
+                  ? `This auction completed successfully. The item was sold for ${formatPrice(product.currentPrice)}.`
+                  : 'This auction ended with no bids.'
+                }
+              </p>
+              
+              {/* Winner Information */}
+              {product.winner && (
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <span className="block text-sm font-medium text-gray-700">Winning Bidder:</span>
+                  <div className="flex items-center mt-2">
+                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-2">
+                      <span className="text-green-700 font-medium">
+                        {product.winner.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      SOLD
-                    </span>
-                  </div>
-                  <div className="border-t border-green-100 px-4 py-3 sm:px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h6 className="text-xs font-medium text-gray-500 uppercase mb-2">Seller</h6>
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 bg-green-100 rounded-full flex items-center justify-center">
-                            <span className="text-green-700 font-medium">
-                              {product.vendor.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{product.vendor.name}</p>
-                            {product.vendor.email && (
-                              <p className="text-xs text-gray-500">{product.vendor.email}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h6 className="text-xs font-medium text-gray-500 uppercase mb-2">Buyer</h6>
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-700 font-medium">
-                              {product.winner.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{product.winner.name}</p>
-                            {product.winner.email && (
-                              <p className="text-xs text-gray-500">{product.winner.email}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-green-100 px-4 py-3 sm:px-6">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">Final Sale Price:</span>
-                      <span className="text-lg font-bold text-green-700">{formatPrice(product.currentPrice)}</span>
-                    </div>
+                    <span>{product.winner.name}</span>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Admin Remarks (if any) */}
-            {product.adminRemarks && (
-              <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">Admin Remarks</dt>
-                <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{product.adminRemarks}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
+          {/* Admin Remarks (if any) */}
+          {product.adminRemarks && (
+            <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-yellow-800 mb-1">Admin Remarks</h3>
+              <p className="text-yellow-700 text-sm">{product.adminRemarks}</p>
+            </div>
+          )}
 
-        {/* Action Buttons */}
-        <div className="px-4 py-5 sm:px-6 flex justify-end space-x-4">
+          {/* Admin Actions */}
+          {isAdmin && product.status === 'pending' && (
+            <div className="mt-6 flex space-x-4">
+              <button
+                onClick={() => onApprove(product._id)}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium"
+              >
+                Approve Auction
+              </button>
+              <button
+                onClick={handleReject}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+
+          {/* Back Button (only shown on mobile) */}
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            className="md:hidden mt-6 w-full flex justify-center items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <ChevronLeftIcon className="h-4 w-4 mr-1" />
+            Back
+          </button>
+        </div>
+      </div>
+
+      {/* Admin Action Buttons in desktop */}
+      {(isAdmin || onApprove || onReject) && (
+        <div className="hidden md:flex px-6 py-4 border-t border-gray-200 justify-end space-x-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           >
             Back
           </button>
@@ -290,20 +333,20 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
             <>
               <button
                 onClick={() => onApprove(product._id)}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
               >
                 Approve
               </button>
               <button
                 onClick={handleReject}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
               >
                 Reject
               </button>
             </>
           )}
         </div>
-      </div>
+      )}
 
       {/* Image Modal */}
       {selectedImage && (
@@ -313,7 +356,7 @@ const ProductDetail = ({ product, onApprove, onReject, isAdmin }) => {
           onClose={() => setSelectedImage(null)}
         />
       )}
-    </>
+    </div>
   );
 };
 
