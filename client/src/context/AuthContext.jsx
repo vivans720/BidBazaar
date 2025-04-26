@@ -124,65 +124,47 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register user
-  const register = async (userData) => {
+  const register = async (formData) => {
     try {
-      dispatch({ type: 'AUTH_LOADING' });
-      console.log('Registering user with data:', userData);
-      
-      const res = await api.post('/auth/register', userData);
-      console.log('Registration response:', res.data);
-      
-      if (res.data.success) {
-        const token = res.data.token;
-        setAuthToken(token);
-        dispatch({ type: 'REGISTER_SUCCESS', payload: token });
-        
-        // Load user data immediately after successful registration
-        try {
-          const userRes = await api.get('/users/me');
-          console.log('User data loaded after registration:', userRes.data);
-          
-          if (!userRes.data.data.role) {
-            console.error('No role found in user data:', userRes.data);
-            throw new Error('User role not found');
-          }
-          
-          dispatch({ type: 'USER_LOADED', payload: userRes.data.data });
-          toast.success('Registration successful!');
-        } catch (userErr) {
-          console.error('Error loading user after registration:', userErr);
-          dispatch({ type: 'AUTH_ERROR' });
-          toast.error('Registration successful but failed to load user data. Please try logging in.');
-        }
-      } else {
-        throw new Error(res.data.error || 'Registration failed');
-      }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setAuthToken(null);
-      
-      let errorMessage = 'Registration failed';
-      if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        errorMessage = err.response.data?.error || err.response.data?.message || 'Server error occurred';
-        console.error('Server response:', err.response.data);
-      } else if (err.request) {
-        // The request was made but no response was received
-        errorMessage = 'No response from server. Please check your internet connection.';
-        console.error('No response received:', err.request);
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        errorMessage = err.message || 'An error occurred during registration';
-        console.error('Error setting up request:', err.message);
-      }
-      
       dispatch({
-        type: 'REGISTER_FAIL',
-        payload: errorMessage
+        type: 'SET_LOADING'
       });
-      toast.error(errorMessage);
-      throw err;
+
+      // Set headers based on whether formData is FormData object or regular object
+      const headers = {};
+      const isFormData = formData instanceof FormData;
+      
+      if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers,
+        body: isFormData ? formData : JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('token', data.token);
+
+      // Get user info
+      await loadUser();
+
+      dispatch({
+        type: 'REGISTER_SUCCESS'
+      });
+    } catch (error) {
+      console.error('Register error:', error);
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: error.message
+      });
     }
   };
 
@@ -249,30 +231,48 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update profile
-  const updateProfile = async (profileData) => {
+  // Update user profile
+  const updateProfile = async (formData) => {
     try {
-      console.log('Updating profile with data:', profileData);
-      dispatch({ type: 'AUTH_LOADING' });
-
-      const res = await api.put('/users/updateprofile', profileData);
-      console.log('Profile update response:', res.data);
-
-      if (res.data.success) {
-        dispatch({ type: 'UPDATE_PROFILE_SUCCESS', payload: res.data.data });
-        toast.success('Profile updated successfully!');
-      } else {
-        throw new Error(res.data.error || 'Profile update failed');
-      }
-    } catch (err) {
-      console.error('Profile update error:', err.response?.data || err.message);
-      const errorMessage = err.response?.data?.error || err.message || 'Profile update failed';
       dispatch({
-        type: 'UPDATE_PROFILE_FAIL',
-        payload: errorMessage
+        type: 'SET_LOADING'
       });
-      toast.error(errorMessage);
-      throw err; // Re-throw to handle in component
+
+      // Check if we're dealing with FormData or regular object
+      const isFormData = formData instanceof FormData;
+      const headers = {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      };
+      
+      if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await fetch('/api/users/updateprofile', {
+        method: 'PUT',
+        headers,
+        body: isFormData ? formData : JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+
+      dispatch({
+        type: 'UPDATE_USER',
+        payload: data.data
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      dispatch({
+        type: 'AUTH_ERROR',
+        payload: error.message
+      });
+      throw error;
     }
   };
 
