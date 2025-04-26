@@ -8,6 +8,12 @@ const asyncHandler = require('express-async-handler');
 const placeBid = asyncHandler(async (req, res) => {
   const { productId, amount } = req.body;
 
+  // Check if user is an admin (admins should not be allowed to bid)
+  if (req.user.role === 'admin') {
+    res.status(403);
+    throw new Error('Administrators are not allowed to place bids on products');
+  }
+
   // Check if product exists and is active
   const product = await Product.findById(productId);
   if (!product) {
