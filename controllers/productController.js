@@ -124,6 +124,30 @@ exports.getProduct = async (req, res) => {
     const now = new Date();
     if (product.status === 'active' && new Date(product.endTime) < now) {
       product.status = 'ended';
+      
+      // Find the highest bidder and set them as the winner
+      const Bid = require('../models/bidModel');
+      const highestBid = await Bid.findOne({ product: product._id })
+        .sort({ amount: -1 })
+        .populate('bidder', 'name email');
+      
+      if (highestBid) {
+        product.winner = highestBid.bidder._id;
+        console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
+        
+        // Update the winning bid status to 'won'
+        highestBid.status = 'won';
+        await highestBid.save();
+        
+        // Update all other bids for this product to 'lost'
+        await Bid.updateMany(
+          { product: product._id, _id: { $ne: highestBid._id } },
+          { status: 'lost' }
+        );
+      } else {
+        console.log(`No bids found for product ${product._id}`);
+      }
+      
       await product.save();
       console.log(`Updated product ${product._id} status to ended`);
     }
@@ -313,12 +337,36 @@ exports.reviewProduct = async (req, res) => {
 // Utility function to check and update expired auctions
 const updateExpiredAuctions = async (productsToCheck) => {
   const now = new Date();
+  const Bid = require('../models/bidModel');
   
   // If we received specific products to check
   if (productsToCheck && Array.isArray(productsToCheck)) {
     for (const product of productsToCheck) {
       if (product.status === 'active' && new Date(product.endTime) < now) {
         product.status = 'ended';
+        
+        // Find the highest bidder and set them as the winner
+        const highestBid = await Bid.findOne({ product: product._id })
+          .sort({ amount: -1 })
+          .populate('bidder', 'name email');
+        
+        if (highestBid) {
+          product.winner = highestBid.bidder._id;
+          console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
+          
+          // Update the winning bid status to 'won'
+          highestBid.status = 'won';
+          await highestBid.save();
+          
+          // Update all other bids for this product to 'lost'
+          await Bid.updateMany(
+            { product: product._id, _id: { $ne: highestBid._id } },
+            { status: 'lost' }
+          );
+        } else {
+          console.log(`No bids found for product ${product._id}`);
+        }
+        
         await product.save();
         console.log(`Updated product ${product._id} status to ended`);
       }
@@ -336,6 +384,29 @@ const updateExpiredAuctions = async (productsToCheck) => {
   
   for (const product of expiredProducts) {
     product.status = 'ended';
+    
+    // Find the highest bidder and set them as the winner
+    const highestBid = await Bid.findOne({ product: product._id })
+      .sort({ amount: -1 })
+      .populate('bidder', 'name email');
+    
+    if (highestBid) {
+      product.winner = highestBid.bidder._id;
+      console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
+      
+      // Update the winning bid status to 'won'
+      highestBid.status = 'won';
+      await highestBid.save();
+      
+      // Update all other bids for this product to 'lost'
+      await Bid.updateMany(
+        { product: product._id, _id: { $ne: highestBid._id } },
+        { status: 'lost' }
+      );
+    } else {
+      console.log(`No bids found for product ${product._id}`);
+    }
+    
     await product.save();
     console.log(`Updated product ${product._id} status to ended`);
   }
