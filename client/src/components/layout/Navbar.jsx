@@ -1,48 +1,70 @@
-import React, { Fragment } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/logo.png';
+import React, { Fragment } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Disclosure, Menu, Transition } from "@headlessui/react";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon,
+  BellIcon,
+} from "@heroicons/react/24/outline";
+import { useAuth } from "../../context/AuthContext";
+import logo from "../../assets/logo.png";
 
 // Navigation items configuration
 const getNavigation = (isAuthenticated, userRole) => [
-  { name: 'Home', href: isAuthenticated ? '/dashboard' : '/', public: true },
-  { name: 'Auctions', href: '/products', public: false, hideForAdmin: true, hideForVendor: true },
-  { name: 'My Bids', href: '/bids', public: false, hideForAdmin: true, hideForVendor: true },
-  { name: 'Dashboard', href: '/dashboard', public: false },
+  { name: "Home", href: isAuthenticated ? "/dashboard" : "/", public: true },
+  {
+    name: "Auctions",
+    href: "/products",
+    public: false,
+    hideForAdmin: true,
+    hideForVendor: true,
+  },
+  {
+    name: "My Bids",
+    href: "/bids",
+    public: false,
+    hideForAdmin: true,
+    hideForVendor: true,
+  },
+  { name: "Wallet", href: "/wallet", public: false }, // Removed role restrictions
+  { name: "Dashboard", href: "/dashboard", public: false },
 ];
 
 function classNames(...classes) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 
 const Navbar = () => {
   const { state, logout } = useAuth();
   const { isAuthenticated, user } = state;
   const location = useLocation();
-  const isAdmin = user?.role === 'admin';
-  const isVendor = user?.role === 'vendor';
+  const isAdmin = user?.role === "admin";
+  const isVendor = user?.role === "vendor";
 
   // Get navigation items based on authentication status and user role
   const navigationItems = getNavigation(isAuthenticated, user?.role);
-  
+
   const filteredNavigation = navigationItems.filter(
-    item => (item.public || isAuthenticated) && 
-    !(isAdmin && item.hideForAdmin) &&
-    !(isVendor && item.hideForVendor)
+    (item) =>
+      (item.public || isAuthenticated) &&
+      !(isAdmin && item.hideForAdmin) &&
+      !(isVendor && item.hideForVendor)
   );
 
   // Home URL changes based on authentication status
-  const homeUrl = isAuthenticated ? '/dashboard' : '/';
-  
+  const homeUrl = isAuthenticated ? "/dashboard" : "/";
+
   // Check if the path is active
   const isActivePath = (path) => {
     return location.pathname === path;
   };
 
   return (
-    <Disclosure as="nav" className="bg-gradient-to-r from-primary-600 to-primary-700 shadow sticky top-0 z-50">
+    <Disclosure
+      as="nav"
+      className="bg-gradient-to-r from-primary-600 to-primary-700 shadow sticky top-0 z-50"
+    >
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -61,12 +83,14 @@ const Navbar = () => {
               <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
                   <Link to={homeUrl} className="flex items-center">
-                    <img 
-                      src={logo} 
-                      alt="BidBazaar Logo" 
-                      className="h-8 w-auto mr-2" 
+                    <img
+                      src={logo}
+                      alt="BidBazaar Logo"
+                      className="h-8 w-auto mr-2"
                     />
-                    <span className="text-white font-bold text-xl">BidBazaar</span>
+                    <span className="text-white font-bold text-xl">
+                      BidBazaar
+                    </span>
                   </Link>
                 </div>
                 <div className="hidden sm:ml-8 sm:block">
@@ -77,9 +101,9 @@ const Navbar = () => {
                         to={item.href}
                         className={classNames(
                           isActivePath(item.href)
-                            ? 'bg-white text-primary-700 font-medium'
-                            : 'text-white hover:bg-primary-500 hover:text-white',
-                          'px-3 py-2 rounded-md text-sm transition-colors duration-150 flex items-center'
+                            ? "bg-white text-primary-700 font-medium"
+                            : "text-white hover:bg-primary-500 hover:text-white",
+                          "px-3 py-2 rounded-md text-sm transition-colors duration-150 flex items-center"
                         )}
                       >
                         {item.name}
@@ -102,7 +126,7 @@ const Navbar = () => {
                       <span className="sr-only">View notifications</span>
                       <BellIcon className="h-6 w-6" aria-hidden="true" />
                     </button>
-                    
+
                     {/* Profile dropdown */}
                     <Menu as="div" className="relative ml-3">
                       <div>
@@ -114,14 +138,18 @@ const Navbar = () => {
                               src={user.profileImage}
                               alt={`${user.name}'s profile`}
                               onError={(e) => {
-                                console.error("Navbar profile image load error:", user.profileImage);
+                                console.error(
+                                  "Navbar profile image load error:",
+                                  user.profileImage
+                                );
                                 e.target.onerror = null;
-                                e.target.src = 'https://via.placeholder.com/150?text=User';
+                                e.target.src =
+                                  "https://via.placeholder.com/150?text=User";
                               }}
                             />
                           ) : (
                             <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-primary-700 text-sm font-medium">
-                              {user?.name?.charAt(0).toUpperCase() || 'U'}
+                              {user?.name?.charAt(0).toUpperCase() || "U"}
                             </div>
                           )}
                         </Menu.Button>
@@ -137,16 +165,20 @@ const Navbar = () => {
                       >
                         <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                           <div className="px-4 py-3 border-b border-gray-100">
-                            <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {user?.name}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {user?.email}
+                            </p>
                           </div>
                           <Menu.Item>
                             {({ active }) => (
                               <Link
                                 to="/profile"
                                 className={classNames(
-                                  active ? 'bg-gray-50' : '',
-                                  'flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
+                                  active ? "bg-gray-50" : "",
+                                  "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
                                 )}
                               >
                                 <UserCircleIcon className="h-5 w-5 text-gray-400" />
@@ -155,34 +187,85 @@ const Navbar = () => {
                             )}
                           </Menu.Item>
                           {!isAdmin && !isVendor && (
-                            <Menu.Item>
-                              {({ active }) => (
-                                <Link
-                                  to="/bids"
-                                  className={classNames(
-                                    active ? 'bg-gray-50' : '',
-                                    'flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
-                                  )}
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  My Bids
-                                </Link>
-                              )}
-                            </Menu.Item>
+                            <>
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <Link
+                                    to="/bids"
+                                    className={classNames(
+                                      active ? "bg-gray-50" : "",
+                                      "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
+                                    )}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-5 w-5 text-gray-400"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    My Bids
+                                  </Link>
+                                )}
+                              </Menu.Item>
+                            </>
                           )}
+                          <Menu.Item>
+                            {({ active }) => (
+                              <Link
+                                to="/wallet"
+                                className={classNames(
+                                  active ? "bg-gray-50" : "",
+                                  "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
+                                )}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5 text-gray-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                  />
+                                </svg>
+                                My Wallet
+                              </Link>
+                            )}
+                          </Menu.Item>
                           <Menu.Item>
                             {({ active }) => (
                               <Link
                                 to="/dashboard"
                                 className={classNames(
-                                  active ? 'bg-gray-50' : '',
-                                  'flex items-center gap-2 px-4 py-2 text-sm text-gray-700'
+                                  active ? "bg-gray-50" : "",
+                                  "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
                                 )}
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5 text-gray-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                  />
                                 </svg>
                                 Dashboard
                               </Link>
@@ -194,12 +277,23 @@ const Navbar = () => {
                               <button
                                 onClick={logout}
                                 className={classNames(
-                                  active ? 'bg-gray-50' : '',
-                                  'flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600'
+                                  active ? "bg-gray-50" : "",
+                                  "flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600"
                                 )}
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5 text-red-500"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                  />
                                 </svg>
                                 Sign out
                               </button>
@@ -238,9 +332,9 @@ const Navbar = () => {
                   to={item.href}
                   className={classNames(
                     isActivePath(item.href)
-                      ? 'bg-white text-primary-700 font-medium'
-                      : 'text-white hover:bg-primary-500',
-                    'block px-3 py-2 rounded-md text-base'
+                      ? "bg-white text-primary-700 font-medium"
+                      : "text-white hover:bg-primary-500",
+                    "block px-3 py-2 rounded-md text-base"
                   )}
                 >
                   {item.name}

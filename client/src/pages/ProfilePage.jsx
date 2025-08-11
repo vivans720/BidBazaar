@@ -1,42 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import ProfileForm from '../components/profile/ProfileForm';
-import PasswordForm from '../components/profile/PasswordForm';
-import UserInfo from '../components/dashboard/UserInfo';
-import UserBids from '../components/user/UserBids';
+import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import ProfileForm from "../components/profile/ProfileForm";
+import PasswordForm from "../components/profile/PasswordForm";
+import UserInfo from "../components/dashboard/UserInfo";
+import UserBids from "../components/user/UserBids";
+import WalletBalance from "../components/wallet/WalletBalance";
+import DepositFunds from "../components/wallet/DepositFunds";
 
 // Icons import - these should be available in your node_modules if you're using Tailwind/Heroicons
 // If not, you may need to install them: npm install @heroicons/react
-import { 
-  UserCircleIcon, 
-  CurrencyRupeeIcon, 
-  PencilIcon, 
-  KeyIcon, 
+import {
+  UserCircleIcon,
+  CurrencyRupeeIcon,
+  PencilIcon,
+  KeyIcon,
   ArrowLeftIcon,
   BellIcon,
-  ShoppingBagIcon
-} from '@heroicons/react/24/outline';
+  ShoppingBagIcon,
+  CreditCardIcon,
+} from "@heroicons/react/24/outline";
 
 const ProfilePage = () => {
   const { state } = useAuth();
   const { isAuthenticated, loading, user } = state;
-  const [activeTab, setActiveTab] = useState('info');
+  const [activeTab, setActiveTab] = useState("info");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin";
 
   // Tab configuration with icons and labels
   const getTabs = () => {
     const allTabs = [
-      { id: 'info', name: 'Account Information', icon: UserCircleIcon },
-      { id: 'bids', name: 'Your Bids', icon: CurrencyRupeeIcon, hideForAdmin: true },
-      { id: 'edit', name: 'Edit Profile', icon: PencilIcon },
-      { id: 'password', name: 'Change Password', icon: KeyIcon },
+      { id: "info", name: "Account Information", icon: UserCircleIcon },
+      {
+        id: "bids",
+        name: "Your Bids",
+        icon: CurrencyRupeeIcon,
+        hideForAdmin: true,
+        hideForVendor: true,
+      },
+      { id: "wallet", name: "Wallet", icon: CreditCardIcon }, // Removed role restrictions
+      { id: "edit", name: "Edit Profile", icon: PencilIcon },
+      { id: "password", name: "Change Password", icon: KeyIcon },
     ];
 
-    return isAdmin 
-      ? allTabs.filter(tab => !tab.hideForAdmin) 
-      : allTabs;
+    return allTabs.filter(
+      (tab) =>
+        !(isAdmin && tab.hideForAdmin) &&
+        !(user?.role === "vendor" && tab.hideForVendor)
+    );
   };
 
   // Get filtered tabs based on user role
@@ -44,8 +56,8 @@ const ProfilePage = () => {
 
   // Ensure active tab is valid in case it was hidden due to role change
   useEffect(() => {
-    if (isAdmin && activeTab === 'bids') {
-      setActiveTab('info');
+    if (isAdmin && activeTab === "bids") {
+      setActiveTab("info");
     }
   }, [isAdmin, activeTab]);
 
@@ -74,14 +86,20 @@ const ProfilePage = () => {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-md bg-white shadow-md text-gray-600 hover:text-primary-600 focus:outline-none"
           >
-            <ArrowLeftIcon className={`h-5 w-5 transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
+            <ArrowLeftIcon
+              className={`h-5 w-5 transition-transform ${
+                sidebarOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
         </div>
 
         {/* Sidebar */}
-        <div className={`${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed lg:relative lg:translate-x-0 z-40 bg-white shadow-lg h-screen w-64 transition-transform duration-300 ease-in-out`}>
+        <div
+          className={`${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } fixed lg:relative lg:translate-x-0 z-40 bg-white shadow-lg h-screen w-64 transition-transform duration-300 ease-in-out`}
+        >
           <div className="p-6 flex flex-col h-full">
             {/* User avatar and info */}
             <div className="flex flex-col items-center mb-8 mt-4">
@@ -92,9 +110,13 @@ const ProfilePage = () => {
                     alt={`${user.name}'s profile`}
                     className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-md"
                     onError={(e) => {
-                      console.error("ProfilePage sidebar image load error:", user.profileImage);
+                      console.error(
+                        "ProfilePage sidebar image load error:",
+                        user.profileImage
+                      );
                       e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/150?text=User';
+                      e.target.src =
+                        "https://via.placeholder.com/150?text=User";
                     }}
                   />
                 ) : (
@@ -106,7 +128,9 @@ const ProfilePage = () => {
                 )}
                 <div className="absolute bottom-0 right-0 h-5 w-5 rounded-full bg-green-400 border-2 border-white"></div>
               </div>
-              <h2 className="mt-4 text-lg font-semibold text-gray-800">{user?.name || "User"}</h2>
+              <h2 className="mt-4 text-lg font-semibold text-gray-800">
+                {user?.name || "User"}
+              </h2>
               <p className="text-sm text-gray-500">{user?.email || ""}</p>
               {isAdmin && (
                 <span className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
@@ -123,13 +147,15 @@ const ProfilePage = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`${
                     activeTab === tab.id
-                      ? 'bg-primary-50 text-primary-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? "bg-primary-50 text-primary-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   } group flex items-center px-3 py-3 text-sm font-medium rounded-md w-full transition-colors`}
                 >
                   <tab.icon
                     className={`${
-                      activeTab === tab.id ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                      activeTab === tab.id
+                        ? "text-primary-500"
+                        : "text-gray-400 group-hover:text-gray-500"
                     } mr-3 flex-shrink-0 h-5 w-5`}
                     aria-hidden="true"
                   />
@@ -141,11 +167,17 @@ const ProfilePage = () => {
             {/* Extra links */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="space-y-1">
-                <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
+                <a
+                  href="#"
+                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
+                >
                   <ShoppingBagIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
                   My Purchases
                 </a>
-                <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
+                <a
+                  href="#"
+                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
+                >
                   <BellIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
                   Notifications
                 </a>
@@ -167,9 +199,13 @@ const ProfilePage = () => {
                       alt={`${user.name}'s profile`}
                       className="h-16 w-16 rounded-full object-cover border-2 border-white shadow-md"
                       onError={(e) => {
-                        console.error("ProfilePage mobile image load error:", user.profileImage);
+                        console.error(
+                          "ProfilePage mobile image load error:",
+                          user.profileImage
+                        );
                         e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/150?text=User';
+                        e.target.src =
+                          "https://via.placeholder.com/150?text=User";
                       }}
                     />
                   ) : (
@@ -182,11 +218,16 @@ const ProfilePage = () => {
                   <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-green-400 border-2 border-white"></div>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{user?.name || "User"}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {user?.name || "User"}
+                  </h1>
                   <div className="flex items-center text-sm text-gray-500">
-                    <span className="mr-2">{tabs.find(tab => tab.id === activeTab)?.name}</span>
+                    <span className="mr-2">
+                      {tabs.find((tab) => tab.id === activeTab)?.name}
+                    </span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
+                      {user?.role?.charAt(0).toUpperCase() +
+                        user?.role?.slice(1) || "User"}
                     </span>
                   </div>
                 </div>
@@ -206,9 +247,13 @@ const ProfilePage = () => {
                           alt={`${user.name}'s profile`}
                           className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-lg"
                           onError={(e) => {
-                            console.error("ProfilePage banner image load error:", user.profileImage);
+                            console.error(
+                              "ProfilePage banner image load error:",
+                              user.profileImage
+                            );
                             e.target.onerror = null;
-                            e.target.src = 'https://via.placeholder.com/150?text=User';
+                            e.target.src =
+                              "https://via.placeholder.com/150?text=User";
                           }}
                         />
                       ) : (
@@ -222,11 +267,14 @@ const ProfilePage = () => {
                     </div>
                   </div>
                   <div className="ml-40">
-                    <h2 className="text-2xl font-bold text-gray-900">{user?.name || "User"}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {user?.name || "User"}
+                    </h2>
                     <p className="text-gray-500">{user?.email || ""}</p>
                     <div className="mt-1">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                        {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || "User"}
+                        {user?.role?.charAt(0).toUpperCase() +
+                          user?.role?.slice(1) || "User"}
                       </span>
                     </div>
                   </div>
@@ -237,10 +285,27 @@ const ProfilePage = () => {
             {/* Content */}
             <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden transition-all duration-300">
               <div className="p-6">
-                {activeTab === 'info' && <UserInfo />}
-                {!isAdmin && activeTab === 'bids' && <UserBids />}
-                {activeTab === 'edit' && <ProfileForm />}
-                {activeTab === 'password' && <PasswordForm />}
+                {activeTab === "info" && <UserInfo />}
+                {!isAdmin &&
+                  user?.role !== "vendor" &&
+                  activeTab === "bids" && <UserBids />}
+                {!isAdmin &&
+                  user?.role !== "vendor" &&
+                  activeTab === "wallet" && (
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Wallet Management
+                      </h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <WalletBalance />
+                        <DepositFunds
+                          onSuccess={() => window.location.reload()}
+                        />
+                      </div>
+                    </div>
+                  )}
+                {activeTab === "edit" && <ProfileForm />}
+                {activeTab === "password" && <PasswordForm />}
               </div>
             </div>
           </div>

@@ -1,8 +1,9 @@
-const User = require('../models/userModel');
-const { validationResult } = require('express-validator');
-const jwt = require('jsonwebtoken');
-const fs = require('fs');
-const path = require('path');
+const User = require("../models/userModel");
+const Wallet = require("../models/walletModel");
+const { validationResult } = require("express-validator");
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -22,7 +23,7 @@ exports.register = async (req, res) => {
     if (user) {
       return res.status(400).json({
         success: false,
-        error: 'User already exists'
+        error: "User already exists",
       });
     }
 
@@ -31,7 +32,7 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'buyer' // Default to buyer if role not specified
+      role: role || "buyer", // Default to buyer if role not specified
     };
 
     // Handle profile image upload if provided
@@ -39,10 +40,10 @@ exports.register = async (req, res) => {
       const file = req.files.profileImage;
 
       // Make sure the image is a photo
-      if (!file.mimetype.startsWith('image')) {
+      if (!file.mimetype.startsWith("image")) {
         return res.status(400).json({
           success: false,
-          error: 'Please upload an image file'
+          error: "Please upload an image file",
         });
       }
 
@@ -50,42 +51,56 @@ exports.register = async (req, res) => {
       if (file.size > 5 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
-          error: 'Image must be less than 5MB'
+          error: "Image must be less than 5MB",
         });
       }
 
       // Create upload directory if it doesn't exist
-      const uploadDir = './uploads/users';
+      const uploadDir = "./uploads/users";
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
       // Create custom filename
       const fileName = `user-${Date.now()}${path.parse(file.name).ext}`;
-      
+
       // Move file to upload directory
       await file.mv(`${uploadDir}/${fileName}`);
-      
+
       // Set profile image path with absolute URL
-      const profileImageUrl = `${req.protocol}://${req.get('host')}/uploads/users/${fileName}`;
+      const profileImageUrl = `${req.protocol}://${req.get(
+        "host"
+      )}/uploads/users/${fileName}`;
       userData.profileImage = profileImageUrl;
     }
 
     // Create user
     user = await User.create(userData);
 
+    // Create wallet for the new user
+    try {
+      await Wallet.create({
+        user: user._id,
+        balance: 0,
+      });
+      console.log(`Wallet created for user ${user._id}`);
+    } catch (walletError) {
+      console.error("Error creating wallet:", walletError);
+      // Don't fail registration if wallet creation fails
+    }
+
     // Generate JWT token
     const token = user.getSignedJwtToken();
 
     res.status(201).json({
       success: true,
-      token
+      token,
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("Registration error:", error);
     res.status(500).json({
       success: false,
-      error: 'Server Error'
+      error: "Server Error",
     });
   }
 };
@@ -95,15 +110,15 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    console.log('Login attempt with body:', req.body);
-    
+    console.log("Login attempt with body:", req.body);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid input',
-        errors: errors.array() 
+      console.log("Validation errors:", errors.array());
+      return res.status(400).json({
+        success: false,
+        error: "Invalid input",
+        errors: errors.array(),
       });
     }
 
@@ -111,38 +126,38 @@ exports.login = async (req, res) => {
 
     // Check if email and password are provided
     if (!email || !password) {
-      console.log('Missing email or password');
+      console.log("Missing email or password");
       return res.status(400).json({
         success: false,
-        error: 'Please provide email and password'
+        error: "Please provide email and password",
       });
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
-    console.log('User found:', user ? 'Yes' : 'No');
+    const user = await User.findOne({ email }).select("+password");
+    console.log("User found:", user ? "Yes" : "No");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: "Invalid credentials",
       });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
-    console.log('Password match:', isMatch ? 'Yes' : 'No');
+    console.log("Password match:", isMatch ? "Yes" : "No");
 
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid credentials'
+        error: "Invalid credentials",
       });
     }
 
     // Create token
     const token = user.getSignedJwtToken();
-    console.log('Token generated successfully');
+    console.log("Token generated successfully");
 
     // Send response
     res.status(200).json({
@@ -152,15 +167,15 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      error: 'Server Error',
-      details: error.message
+      error: "Server Error",
+      details: error.message,
     });
   }
 };
@@ -171,7 +186,7 @@ exports.login = async (req, res) => {
 exports.logout = async (req, res) => {
   res.status(200).json({
     success: true,
-    data: {}
+    data: {},
   });
 };
 
@@ -185,7 +200,7 @@ exports.updatePassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await User.findById(req.user.id).select("+password");
 
     // Check current password
     const isMatch = await user.matchPassword(req.body.currentPassword);
@@ -193,7 +208,7 @@ exports.updatePassword = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        error: 'Current password is incorrect'
+        error: "Current password is incorrect",
       });
     }
 
@@ -204,7 +219,7 @@ exports.updatePassword = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Server Error'
+      error: "Server Error",
     });
   }
 };
@@ -221,7 +236,7 @@ const sendTokenResponse = (user, statusCode, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
-    }
+      role: user.role,
+    },
   });
 };

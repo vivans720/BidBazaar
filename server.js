@@ -1,12 +1,14 @@
-const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
-const dotenv = require('dotenv');
-const fileUpload = require('express-fileupload');
-const connectDB = require('./config/db');
-const Product = require('./models/productModel');
-const Bid = require('./models/bidModel');
-const path = require('path');
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const dotenv = require("dotenv");
+const fileUpload = require("express-fileupload");
+const connectDB = require("./config/db");
+const Product = require("./models/productModel");
+const Bid = require("./models/bidModel");
+const Wallet = require("./models/walletModel");
+const User = require("./models/userModel");
+const path = require("path");
 
 // Load env vars
 dotenv.config();
@@ -15,11 +17,12 @@ dotenv.config();
 connectDB();
 
 // Route files
-const userRoutes = require('./routes/userRoutes');
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const bidRoutes = require('./routes/bidRoutes');
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
+const productRoutes = require("./routes/productRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
+const bidRoutes = require("./routes/bidRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 
 const app = express();
 
@@ -27,29 +30,33 @@ const app = express();
 app.use(express.json());
 
 // File Upload
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: './tmp',
-  debug: process.env.NODE_ENV === 'development',
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  abortOnLimit: true,
-  responseOnLimit: 'File size is too large. Maximum size is 5MB.',
-  createParentPath: true,
-}));
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "./tmp",
+    debug: process.env.NODE_ENV === "development",
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    abortOnLimit: true,
+    responseOnLimit: "File size is too large. Maximum size is 5MB.",
+    createParentPath: true,
+  })
+);
 
 // Serve static files from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Enable CORS
-const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
-app.use(cors({
-  origin: [clientURL, 'https://bidbazaar.pages.dev'],
-  credentials: true
-}));
+const clientURL = process.env.CLIENT_URL || "http://localhost:3000";
+app.use(
+  cors({
+    origin: [clientURL, "https://bidbazaar.pages.dev"],
+    credentials: true,
+  })
+);
 
 // Dev logging middleware
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
 }
 
 // Scheduled task to update expired auctions
@@ -57,42 +64,114 @@ const updateExpiredAuctions = async () => {
   const now = new Date();
   try {
     const expiredProducts = await Product.find({
-      status: 'active',
-      endTime: { $lt: now }
+      status: "active",
+      endTime: { $lt: now },
     });
-    
+
     console.log(`Found ${expiredProducts.length} expired auctions to update`);
-    
+
     for (const product of expiredProducts) {
-      product.status = 'ended';
-      
+      product.status = "ended";
+
       // Find the highest bidder and set them as the winner
       const highestBid = await Bid.findOne({ product: product._id })
         .sort({ amount: -1 })
-        .populate('bidder', 'name email');
-      
+        .populate("bidder", "name email");
+
       if (highestBid) {
         product.winner = highestBid.bidder._id;
-        console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
-        
+        console.log(
+          `Setting winner for product ${product._id} to ${highestBid.bidder.name}`
+        );
+
         // Update the winning bid status to 'won'
-        highestBid.status = 'won';
+        highestBid.status = "won";
         await highestBid.save();
-        
-        // Update all other bids for this product to 'lost'
+
+        // Handle wallet transactions for auction end
+        try {
+          // Winner keeps their bid amount as final payment
+          const winnerWallet = await Wallet.findOne({
+            user: highestBid.bidder._id,
+          });
+          if (winnerWallet) {
+            // Check if auction_win transaction already exists for this bid
+            const Transaction = require("./models/transactionModel");
+            const existingWinTransaction = await Transaction.findOne({
+              relatedBid: highestBid._id,
+              type: "auction_win",
+            });
+
+            if (!existingWinTransaction) {
+              // Record the final auction payment transaction
+              await Transaction.create({
+                wallet: winnerWallet._id,
+                user: highestBid.bidder._id,
+                type: "auction_win",
+                amount: 0, // No additional deduction as bid amount was already deducted
+                balanceAfter: winnerWallet.balance,
+                description: `Won auction for product: ${
+                  product.title || product.name
+                }`,
+                status: "completed",
+                relatedProduct: product._id,
+                relatedBid: highestBid._id,
+              });
+            }
+          }
+
+          // Refund all losing bidders
+          const losingBids = await Bid.find({
+            product: product._id,
+            _id: { $ne: highestBid._id },
+          });
+
+          for (const losingBid of losingBids) {
+            const loserWallet = await Wallet.findOne({
+              user: losingBid.bidder,
+            });
+            if (loserWallet) {
+              await loserWallet.addFunds(
+                losingBid.amount,
+                "bid_refund",
+                `Bid refund for ended auction: ${
+                  product.title || product.name
+                }`,
+                losingBid._id,
+                product._id
+              );
+
+              // Update user's cached balance
+              await User.findByIdAndUpdate(losingBid.bidder, {
+                walletBalance: loserWallet.balance,
+              });
+            }
+
+            // Update losing bid status
+            losingBid.status = "lost";
+            await losingBid.save();
+          }
+        } catch (walletError) {
+          console.error(
+            "Error handling wallet transactions for auction end:",
+            walletError
+          );
+        }
+
+        // Update all other bids for this product to 'lost' (fallback)
         await Bid.updateMany(
           { product: product._id, _id: { $ne: highestBid._id } },
-          { status: 'lost' }
+          { status: "lost" }
         );
       } else {
         console.log(`No bids found for product ${product._id}`);
       }
-      
+
       await product.save();
       console.log(`Updated product ${product._id} status to ended`);
     }
   } catch (err) {
-    console.error('Error updating expired auctions:', err);
+    console.error("Error updating expired auctions:", err);
   }
 };
 
@@ -103,36 +182,39 @@ updateExpiredAuctions();
 setInterval(updateExpiredAuctions, 10 * 60 * 1000);
 
 // Mount routers
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/bids', bidRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/bids", bidRoutes);
+app.use("/api/wallet", walletRoutes);
 
 // Basic route
-app.get('/', (req, res) => {
-  res.send('Server is running...');
+app.get("/", (req, res) => {
+  res.send("Server is running...");
 });
 
 // Test route for image files
-app.get('/test-image', (req, res) => {
-  const testImagePath = path.join(__dirname, 'uploads/users');
-  const fs = require('fs');
+app.get("/test-image", (req, res) => {
+  const testImagePath = path.join(__dirname, "uploads/users");
+  const fs = require("fs");
   fs.readdir(testImagePath, (err, files) => {
     if (err) {
       return res.status(500).json({
         success: false,
-        error: 'Error reading uploads directory',
-        details: err.message
+        error: "Error reading uploads directory",
+        details: err.message,
       });
     }
-    
+
     res.json({
       success: true,
-      message: 'Uploads directory contents',
+      message: "Uploads directory contents",
       files,
       uploadPath: testImagePath,
-      url: `${req.protocol}://${req.get('host')}/uploads/users/${files[0] || 'no-files'}`
+      url: `${req.protocol}://${req.get("host")}/uploads/users/${
+        files[0] || "no-files"
+      }`,
     });
   });
 });
@@ -142,7 +224,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
-    error: err.message || 'Server Error'
+    error: err.message || "Server Error",
   });
 });
 

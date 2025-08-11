@@ -1,5 +1,5 @@
-const Product = require('../models/productModel');
-const { validationResult } = require('express-validator');
+const Product = require("../models/productModel");
+const { validationResult } = require("express-validator");
 
 // @desc    Create new product listing
 // @route   POST /api/products
@@ -13,22 +13,24 @@ exports.createProduct = async (req, res) => {
   try {
     // Add vendor to req.body
     req.body.vendor = req.user.id;
-    
+
     // Calculate end time
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + req.body.duration * 60 * 60 * 1000);
+    const endTime = new Date(
+      startTime.getTime() + req.body.duration * 60 * 60 * 1000
+    );
     req.body.endTime = endTime;
 
     const product = await Product.create(req.body);
 
     res.status(201).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -40,7 +42,7 @@ exports.getProducts = async (req, res) => {
   try {
     // First, update any expired auctions
     await updateExpiredAuctions();
-    
+
     const { category, status, sort, page = 1, limit = 10 } = req.query;
     const query = {};
 
@@ -54,8 +56,8 @@ exports.getProducts = async (req, res) => {
       query.status = status;
     } else {
       // By default, show only active products for public viewing
-      if (!req.user || req.user.role !== 'admin') {
-        query.status = 'active';
+      if (!req.user || req.user.role !== "admin") {
+        query.status = "active";
       }
     }
 
@@ -63,13 +65,13 @@ exports.getProducts = async (req, res) => {
     let sortQuery = {};
     if (sort) {
       switch (sort) {
-        case 'price-asc':
+        case "price-asc":
           sortQuery = { currentPrice: 1 };
           break;
-        case 'price-desc':
+        case "price-desc":
           sortQuery = { currentPrice: -1 };
           break;
-        case 'ending-soon':
+        case "ending-soon":
           sortQuery = { endTime: 1 };
           break;
         default:
@@ -81,7 +83,7 @@ exports.getProducts = async (req, res) => {
       .sort(sortQuery)
       .skip((page - 1) * limit)
       .limit(limit)
-      .populate('vendor', 'name');
+      .populate("vendor", "name");
 
     const total = await Product.countDocuments(query);
 
@@ -92,13 +94,13 @@ exports.getProducts = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -110,44 +112,118 @@ exports.getProduct = async (req, res) => {
   try {
     // Populate both vendor and winner fields for complete sale information
     const product = await Product.findById(req.params.id)
-      .populate('vendor', 'name email')
-      .populate('winner', 'name email');
+      .populate("vendor", "name email")
+      .populate("winner", "name email");
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
-    
+
     // Check if auction has expired and update status if needed
     const now = new Date();
-    if (product.status === 'active' && new Date(product.endTime) < now) {
-      product.status = 'ended';
-      
+    if (product.status === "active" && new Date(product.endTime) < now) {
+      product.status = "ended";
+
       // Find the highest bidder and set them as the winner
-      const Bid = require('../models/bidModel');
+      const Bid = require("../models/bidModel");
+      const Wallet = require("../models/walletModel");
+      const User = require("../models/userModel");
       const highestBid = await Bid.findOne({ product: product._id })
         .sort({ amount: -1 })
-        .populate('bidder', 'name email');
-      
+        .populate("bidder", "name email");
+
       if (highestBid) {
         product.winner = highestBid.bidder._id;
-        console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
-        
+        console.log(
+          `Setting winner for product ${product._id} to ${highestBid.bidder.name}`
+        );
+
         // Update the winning bid status to 'won'
-        highestBid.status = 'won';
+        highestBid.status = "won";
         await highestBid.save();
-        
+
+        // Handle wallet transactions for auction end
+        try {
+          // Winner keeps their bid amount as final payment
+          const winnerWallet = await Wallet.findOne({
+            user: highestBid.bidder._id,
+          });
+          if (winnerWallet) {
+            // Check if auction_win transaction already exists for this bid
+            const Transaction = require("../models/transactionModel");
+            const existingWinTransaction = await Transaction.findOne({
+              relatedBid: highestBid._id,
+              type: "auction_win",
+            });
+
+            if (!existingWinTransaction) {
+              // Record the final auction payment transaction
+              await Transaction.create({
+                wallet: winnerWallet._id,
+                user: highestBid.bidder._id,
+                type: "auction_win",
+                amount: 0, // No additional deduction as bid amount was already deducted
+                balanceAfter: winnerWallet.balance,
+                description: `Won auction for product: ${
+                  product.title || product.name
+                }`,
+                status: "completed",
+                relatedProduct: product._id,
+                relatedBid: highestBid._id,
+              });
+            }
+          }
+
+          // Refund all losing bidders
+          const losingBids = await Bid.find({
+            product: product._id,
+            _id: { $ne: highestBid._id },
+          });
+
+          for (const losingBid of losingBids) {
+            const loserWallet = await Wallet.findOne({
+              user: losingBid.bidder,
+            });
+            if (loserWallet) {
+              await loserWallet.addFunds(
+                losingBid.amount,
+                "bid_refund",
+                `Bid refund for ended auction: ${
+                  product.title || product.name
+                }`,
+                losingBid._id,
+                product._id
+              );
+
+              // Update user's cached balance
+              await User.findByIdAndUpdate(losingBid.bidder, {
+                walletBalance: loserWallet.balance,
+              });
+            }
+
+            // Update losing bid status
+            losingBid.status = "lost";
+            await losingBid.save();
+          }
+        } catch (walletError) {
+          console.error(
+            "Error handling wallet transactions for auction end:",
+            walletError
+          );
+        }
+
         // Update all other bids for this product to 'lost'
         await Bid.updateMany(
           { product: product._id, _id: { $ne: highestBid._id } },
-          { status: 'lost' }
+          { status: "lost" }
         );
       } else {
         console.log(`No bids found for product ${product._id}`);
       }
-      
+
       await product.save();
       console.log(`Updated product ${product._id} status to ended`);
     }
@@ -156,12 +232,12 @@ exports.getProduct = async (req, res) => {
     // This ensures users can view auction results
     res.status(200).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -176,44 +252,49 @@ exports.updateProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     // Make sure user is product vendor
-    if (product.vendor.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (
+      product.vendor.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
       return res.status(401).json({
         success: false,
-        error: 'Not authorized to update this product'
+        error: "Not authorized to update this product",
       });
     }
 
     // Don't allow updating certain fields after product is active
-    if (product.status !== 'pending') {
-      const restrictedFields = ['startingPrice', 'duration', 'endTime'];
-      const hasRestrictedFields = restrictedFields.some(field => req.body[field]);
-      
+    if (product.status !== "pending") {
+      const restrictedFields = ["startingPrice", "duration", "endTime"];
+      const hasRestrictedFields = restrictedFields.some(
+        (field) => req.body[field]
+      );
+
       if (hasRestrictedFields) {
         return res.status(400).json({
           success: false,
-          error: 'Cannot update price or duration once product is active'
+          error: "Cannot update price or duration once product is active",
         });
       }
     }
 
     product = await Product.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
 
     res.status(200).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -228,23 +309,26 @@ exports.deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     // Make sure user is product vendor
-    if (product.vendor.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (
+      product.vendor.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
       return res.status(401).json({
         success: false,
-        error: 'Not authorized to delete this product'
+        error: "Not authorized to delete this product",
       });
     }
 
     // Only allow deletion if product is pending or rejected
-    if (!['pending', 'rejected'].includes(product.status)) {
+    if (!["pending", "rejected"].includes(product.status)) {
       return res.status(400).json({
         success: false,
-        error: 'Cannot delete active or ended products'
+        error: "Cannot delete active or ended products",
       });
     }
 
@@ -252,12 +336,12 @@ exports.deleteProduct = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: {}
+      data: {},
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -268,18 +352,18 @@ exports.deleteProduct = async (req, res) => {
 exports.getVendorProducts = async (req, res) => {
   try {
     const products = await Product.find({ vendor: req.user.id })
-      .populate('winner', 'name email')
-      .populate('vendor', 'name email');
+      .populate("winner", "name email")
+      .populate("vendor", "name email");
 
     res.status(200).json({
       success: true,
       count: products.length,
-      data: products
+      data: products,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -290,46 +374,46 @@ exports.getVendorProducts = async (req, res) => {
 exports.reviewProduct = async (req, res) => {
   try {
     const { status, adminRemarks } = req.body;
-    
-    if (!status || !['active', 'rejected'].includes(status)) {
+
+    if (!status || !["active", "rejected"].includes(status)) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide a valid status (active or rejected)'
+        error: "Please provide a valid status (active or rejected)",
       });
     }
-    
+
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
-    
+
     // Only allow reviewing pending products
-    if (product.status !== 'pending') {
+    if (product.status !== "pending") {
       return res.status(400).json({
         success: false,
-        error: `Cannot review ${product.status} products`
+        error: `Cannot review ${product.status} products`,
       });
     }
-    
+
     product.status = status;
     if (adminRemarks) {
       product.adminRemarks = adminRemarks;
     }
-    
+
     await product.save();
-    
+
     res.status(200).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -337,80 +421,84 @@ exports.reviewProduct = async (req, res) => {
 // Utility function to check and update expired auctions
 const updateExpiredAuctions = async (productsToCheck) => {
   const now = new Date();
-  const Bid = require('../models/bidModel');
-  
+  const Bid = require("../models/bidModel");
+
   // If we received specific products to check
   if (productsToCheck && Array.isArray(productsToCheck)) {
     for (const product of productsToCheck) {
-      if (product.status === 'active' && new Date(product.endTime) < now) {
-        product.status = 'ended';
-        
+      if (product.status === "active" && new Date(product.endTime) < now) {
+        product.status = "ended";
+
         // Find the highest bidder and set them as the winner
         const highestBid = await Bid.findOne({ product: product._id })
           .sort({ amount: -1 })
-          .populate('bidder', 'name email');
-        
+          .populate("bidder", "name email");
+
         if (highestBid) {
           product.winner = highestBid.bidder._id;
-          console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
-          
+          console.log(
+            `Setting winner for product ${product._id} to ${highestBid.bidder.name}`
+          );
+
           // Update the winning bid status to 'won'
-          highestBid.status = 'won';
+          highestBid.status = "won";
           await highestBid.save();
-          
+
           // Update all other bids for this product to 'lost'
           await Bid.updateMany(
             { product: product._id, _id: { $ne: highestBid._id } },
-            { status: 'lost' }
+            { status: "lost" }
           );
         } else {
           console.log(`No bids found for product ${product._id}`);
         }
-        
+
         await product.save();
         console.log(`Updated product ${product._id} status to ended`);
       }
     }
     return productsToCheck;
   }
-  
+
   // If no specific products provided, update all expired active products in the database
   const expiredProducts = await Product.find({
-    status: 'active',
-    endTime: { $lt: now }
+    status: "active",
+    endTime: { $lt: now },
   });
-  
+
   console.log(`Found ${expiredProducts.length} expired auctions to update`);
-  
+
   for (const product of expiredProducts) {
-    product.status = 'ended';
-    
+    product.status = "ended";
+
     // Find the highest bidder and set them as the winner
     const highestBid = await Bid.findOne({ product: product._id })
       .sort({ amount: -1 })
-      .populate('bidder', 'name email');
-    
+      .populate("bidder", "name email");
+
     if (highestBid) {
       product.winner = highestBid.bidder._id;
-      console.log(`Setting winner for product ${product._id} to ${highestBid.bidder.name}`);
-      
+      console.log(
+        `Setting winner for product ${product._id} to ${highestBid.bidder.name}`
+      );
+
       // Update the winning bid status to 'won'
-      highestBid.status = 'won';
+      highestBid.status = "won";
       await highestBid.save();
-      
+
       // Update all other bids for this product to 'lost'
       await Bid.updateMany(
         { product: product._id, _id: { $ne: highestBid._id } },
-        { status: 'lost' }
+        { status: "lost" }
       );
     } else {
       console.log(`No bids found for product ${product._id}`);
     }
-    
+
     await product.save();
     console.log(`Updated product ${product._id} status to ended`);
   }
-  
+
   return expiredProducts;
 };
 
@@ -421,5 +509,5 @@ module.exports = {
   updateProduct: exports.updateProduct,
   deleteProduct: exports.deleteProduct,
   getVendorProducts: exports.getVendorProducts,
-  reviewProduct: exports.reviewProduct
+  reviewProduct: exports.reviewProduct,
 };
