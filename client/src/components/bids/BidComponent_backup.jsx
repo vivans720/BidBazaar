@@ -4,11 +4,11 @@ import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 
-// Import icons
+// Import icons (if not already imported)
 import {
   CurrencyRupeeIcon,
   ArrowTrendingUpIcon,
-  ChevronDownIcon,
+  ChevronUpIcon,
   InformationCircleIcon,
   ShieldCheckIcon,
   ArrowRightIcon,
@@ -52,67 +52,70 @@ const BidComponent = ({
       startingPrice,
       currentPrice,
       hasStartingPrice: !!startingPrice,
-      hasCurrentPrice: !!currentPrice,
-      startingPriceType: typeof startingPrice,
-      currentPriceType: typeof currentPrice,
+      hasCurrentPrice: !!currentPrice
     });
 
-    // Ensure we have valid numeric values
-    const validStartingPrice =
-      startingPrice && !isNaN(startingPrice) ? Number(startingPrice) : null;
-    const validCurrentPrice =
-      currentPrice && !isNaN(currentPrice) ? Number(currentPrice) : null;
-
-    if (validStartingPrice && validStartingPrice > 0) {
-      const increment = Math.ceil(validStartingPrice * 0.05);
+    if (startingPrice && startingPrice > 0) {
+      const increment = Math.ceil(startingPrice * 0.05);
       const amounts = [];
-      let value = Math.max(validStartingPrice, validCurrentPrice || 0);
+      let value = Math.max(startingPrice, currentPrice || 0);
 
-      // Generate valid bid amounts
-      for (let i = 0; i < 15; i++) {
+      // Generate valid bid amounts up to a reasonable limit (e.g., 10 steps above current price)
+      for (let i = 0; i < 20; i++) {
         value += increment;
-        amounts.push(Math.round(value)); // Ensure whole numbers
+        amounts.push(value);
+        if (value >= (currentPrice || startingPrice) * 2) break; // Don't go too far beyond current price
       }
 
-      console.log(
-        "BidComponent - Generated valid amounts:",
-        amounts.slice(0, 5)
-      );
+      console.log("BidComponent - Generated valid amounts:", amounts.slice(0, 5));
       setValidBidAmounts(amounts);
-      setUseManualInput(false);
-    } else if (validCurrentPrice && validCurrentPrice > 0) {
-      console.warn(
-        "BidComponent - Using fallback calculation with currentPrice:",
-        validCurrentPrice
-      );
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50); // Minimum increment of 50
+    } else if (currentPrice && currentPrice > 0) {
+      console.warn("BidComponent - Using fallback calculation with currentPrice:", currentPrice);
+      // Fallback: use currentPrice as base if startingPrice is not available
+      const increment = Math.ceil(currentPrice * 0.05);
       const amounts = [];
-      let value = validCurrentPrice;
+      let value = currentPrice;
 
       for (let i = 0; i < 10; i++) {
         value += increment;
-        amounts.push(Math.round(value));
+        amounts.push(value);
       }
 
-      console.log(
-        "BidComponent - Fallback amounts generated:",
-        amounts.slice(0, 5)
-      );
+      console.log("BidComponent - Fallback amounts generated:", amounts.slice(0, 5));
       setValidBidAmounts(amounts);
-      setUseManualInput(false);
     } else {
-      console.error(
-        "BidComponent - Cannot calculate bid amounts. No valid starting or current price:",
-        {
-          startingPrice: validStartingPrice,
-          currentPrice: validCurrentPrice,
-        }
-      );
-      // Force manual input if we can't calculate amounts
+      console.error("BidComponent - Cannot calculate bid amounts. No valid starting or current price:", {
+        startingPrice,
+        currentPrice
+      });
+      // Set empty array and force manual input
       setValidBidAmounts([]);
       setUseManualInput(true);
     }
   }, [startingPrice, currentPrice]);
+
+  // Log authentication state on mount and when it changes
+  useEffect(() => {
+    console.log("BidComponent - Auth State:", {
+      isAuthenticated,
+      user: user ? `${user.name} (${user.role})` : "No user",
+      token: state.token ? "Token exists" : "No token",
+    });
+  }, [isAuthenticated, user, state.token]);
+
+  // Additional logging for props
+  useEffect(() => {
+    console.log("BidComponent - Props received:", {
+      productId,
+      currentPrice,
+      startingPrice,
+      propsType: {
+        productId: typeof productId,
+        currentPrice: typeof currentPrice,
+        startingPrice: typeof startingPrice,
+      }
+    });
+  }, [productId, currentPrice, startingPrice]);
 
   // Function to fetch bids
   const fetchBids = async () => {
@@ -129,26 +132,16 @@ const BidComponent = ({
 
   // Get next valid bid amount
   const getNextValidBidAmount = () => {
-    const validCurrentPrice =
-      currentPrice && !isNaN(currentPrice) ? Number(currentPrice) : 0;
-    const validStartingPrice =
-      startingPrice && !isNaN(startingPrice) ? Number(startingPrice) : 0;
-
     // Find the first valid bid amount that is higher than the current price
-    const nextValidAmount = validBidAmounts.find(
-      (amount) => amount > validCurrentPrice
-    );
-
+    const nextValidAmount = validBidAmounts.find((amount) => amount > (currentPrice || 0));
+    
     // Fallback calculation if validBidAmounts is empty
-    if (!nextValidAmount && validStartingPrice) {
-      const increment = Math.max(Math.ceil(validStartingPrice * 0.05), 50);
-      return Math.max(validCurrentPrice, validStartingPrice) + increment;
-    } else if (!nextValidAmount && validCurrentPrice) {
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50);
-      return validCurrentPrice + increment;
+    if (!nextValidAmount && startingPrice) {
+      const increment = Math.ceil(startingPrice * 0.05);
+      return (currentPrice || startingPrice) + increment;
     }
-
-    return nextValidAmount || validCurrentPrice + 100; // Final fallback
+    
+    return nextValidAmount || (currentPrice || startingPrice || 0) + 100; // Final fallback
   };
 
   // Handle bid submission
@@ -178,20 +171,27 @@ const BidComponent = ({
 
     const nextValidBid = getNextValidBidAmount();
     const bidAmountFloat = parseFloat(bidAmount);
-    const validCurrentPrice =
-      currentPrice && !isNaN(currentPrice) ? Number(currentPrice) : 0;
 
-    if (bidAmountFloat <= validCurrentPrice) {
+    // Check if bid amount is a valid increment (only if we have valid amounts calculated and using dropdown)
+    if (
+      !useManualInput &&
+      validBidAmounts.length > 0 &&
+      !validBidAmounts.includes(bidAmountFloat)
+    ) {
       toast.error(
-        `Bid amount must be higher than current price (${formatPrice(
-          validCurrentPrice
-        )})`
+        `Please bid at a valid 5% increment from the base price. Next valid amount: ${formatPrice(
+          nextValidBid
+        )}`
       );
       return;
     }
 
-    if (bidAmountFloat < nextValidBid) {
-      toast.error(`Minimum bid amount is ${formatPrice(nextValidBid)}`);
+    if (bidAmountFloat <= (currentPrice || 0)) {
+      toast.error(
+        `Bid amount must be higher than current price (${formatPrice(
+          currentPrice || 0
+        )})`
+      );
       return;
     }
 
@@ -245,8 +245,6 @@ const BidComponent = ({
 
   // Get minimum next valid bid
   const minimumBid = getNextValidBidAmount();
-  const validCurrentPrice =
-    currentPrice && !isNaN(currentPrice) ? Number(currentPrice) : 0;
 
   return (
     <div className="p-6">
@@ -288,7 +286,7 @@ const BidComponent = ({
           <div>
             <p className="text-sm text-gray-500">Current bid</p>
             <p className="text-2xl font-bold text-gray-900">
-              {formatPrice(validCurrentPrice)}
+              {formatPrice(currentPrice)}
             </p>
           </div>
           <div className="bg-primary-50 text-primary-800 px-3 py-1 rounded-full text-xs font-medium border border-primary-100">
@@ -309,159 +307,160 @@ const BidComponent = ({
       {isAuthenticated ? (
         <>
           {/* Debug information (only in development) */}
-          {process.env.NODE_ENV === "development" && (
+          {process.env.NODE_ENV === 'development' && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
               <strong>Debug Info:</strong>
               <br />
               Valid bid amounts: {validBidAmounts.length}
               <br />
-              Starting price: {startingPrice || "undefined"}
+              Starting price: {startingPrice || 'undefined'}
               <br />
-              Current price: {currentPrice || "undefined"}
+              Current price: {currentPrice || 'undefined'}
               <br />
               Next valid bid: {formatPrice(minimumBid)}
-              <br />
-              Use manual input: {useManualInput ? "Yes" : "No"}
             </div>
           )}
-
+          
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                htmlFor="bidAmount"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Your bid amount
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <CurrencyRupeeIcon className="h-5 w-5 text-gray-400" />
-                </div>
+          <div>
+            <label
+              htmlFor="bidAmount"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Your bid amount
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <CurrencyRupeeIcon className="h-5 w-5 text-gray-400" />
+              </div>
 
-                {!useManualInput && validBidAmounts.length > 0 ? (
-                  <>
-                    <select
-                      id="bidAmount"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(e.target.value)}
-                      className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none bg-white"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select a bid amount
-                      </option>
-                      {validBidAmounts
-                        .filter((amount) => amount > validCurrentPrice)
-                        .slice(0, 10) // Limit to 10 options
-                        .map((amount, index) => (
-                          <option key={`bid-${amount}-${index}`} value={amount}>
-                            {formatPrice(amount)}{" "}
-                            {index === 0 ? "(Minimum bid)" : ""}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </>
-                ) : (
+              {!useManualInput && validBidAmounts.length > 0 ? (
+                <>
+                  <select
+                    id="bidAmount"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 shadow-sm appearance-none"
+                    required
+                  >
+                    <option value="" disabled>Select a bid amount</option>
+                    {validBidAmounts
+                      .filter((amount) => amount > (currentPrice || 0))
+                      .slice(0, 10) // Limit to 10 options
+                      .map((amount, index) => (
+                        <option
+                          key={`bid-${amount}-${index}`}
+                          value={amount}
+                          className={
+                            index === 0 ? "font-medium text-primary-700" : ""
+                          }
+                        >
+                          {formatPrice(amount)} {index === 0 ? "(Minimum bid)" : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                </>
+              ) : (
+                <>
                   <input
                     type="number"
                     id="bidAmount"
                     value={bidAmount}
                     onChange={(e) => setBidAmount(e.target.value)}
-                    min={minimumBid}
+                    min={Math.max(currentPrice + 1, (startingPrice || 0) + 1)}
                     step="1"
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 shadow-sm"
-                    placeholder={`Enter amount (min: ${formatPrice(
-                      minimumBid
-                    )})`}
+                    placeholder={`Enter amount (min: ${formatPrice(Math.max((currentPrice || 0) + 1, (startingPrice || 0) + 1))})`}
                     required
                   />
-                )}
-              </div>
-
-              {validBidAmounts.length === 0 && !useManualInput && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setUseManualInput(true)}
-                    className="text-xs text-primary-600 hover:text-primary-500 underline"
-                  >
-                    Can't see bid options? Enter amount manually
-                  </button>
-                </div>
+                </>
               )}
-
-              {useManualInput && validBidAmounts.length > 0 && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUseManualInput(false);
-                      setBidAmount("");
-                    }}
-                    className="text-xs text-primary-600 hover:text-primary-500 underline"
-                  >
-                    Switch back to dropdown selection
-                  </button>
-                </div>
-              )}
-
-              <p className="mt-1 text-xs text-gray-500">
-                Bid in increments of{" "}
-                {startingPrice
-                  ? formatPrice(Math.max(Math.ceil(startingPrice * 0.05), 50))
-                  : "₹50"}
-              </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>Place Bid</>
-              )}
-            </button>
-
-            {errorDetails && (
-              <div className="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-md border border-red-100">
-                <p className="font-medium">{errorDetails.message}</p>
-                {errorDetails.status === 401 && (
-                  <p className="mt-1">
-                    Please try logging in again to resolve this issue.
-                  </p>
-                )}
+            {validBidAmounts.length === 0 && !useManualInput && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => setUseManualInput(true)}
+                  className="text-xs text-primary-600 hover:text-primary-500 underline"
+                >
+                  Can't see bid options? Enter amount manually
+                </button>
               </div>
             )}
-          </form>
-        </>
+
+            {useManualInput && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseManualInput(false);
+                    setBidAmount("");
+                  }}
+                  className="text-xs text-primary-600 hover:text-primary-500 underline"
+                >
+                  Switch back to dropdown selection
+                </button>
+              </div>
+            )}
+
+            <p className="mt-1 text-xs text-gray-500">
+              Bid in increments of{" "}
+              {startingPrice ? 
+                formatPrice(Math.ceil(startingPrice * 0.05)) : 
+                "₹100"
+              }
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>Place Bid</>
+            )}
+          </button>
+
+          {errorDetails && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-md border border-red-100">
+              <p className="font-medium">{errorDetails.message}</p>
+              {errorDetails.status === 401 && (
+                <p className="mt-1">
+                  Please try logging in again to resolve this issue.
+                </p>
+              )}
+            </div>
+          )}
+        </form>
       ) : (
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
           <p className="text-sm text-blue-700 mb-3">
