@@ -31,17 +31,17 @@ router.get("/product/:productId", getProductBids);
 router.get("/user", protect, getUserBids);
 
 /**
- * @route   GET /api/bids/:bidId
- * @desc    Get single bid details
- * @access  Private
- */
-router.get("/:bidId", protect, getBid);
-
-/**
  * @route   GET /api/bids/stats
  * @desc    Get overall bid statistics for the platform
  * @access  Public
  */
 router.get("/stats", getBidStats);
+
+/**
+ * @route   GET /api/bids/:bidId
+ * @desc    Get single bid details
+ * @access  Private
+ */
+router.get("/:bidId", protect, getBid);
 
 module.exports = router;
