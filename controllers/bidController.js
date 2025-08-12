@@ -244,9 +244,43 @@ const getBidStats = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get single bid details
+// @route   GET /api/bids/:bidId
+// @access  Private
+const getBid = async (req, res) => {
+  try {
+    const bid = await Bid.findById(req.params.bidId)
+      .populate("bidder", "name email")
+      .populate("product", "title images currentPrice startingPrice vendor");
+
+    if (!bid) {
+      res.status(404);
+      throw new Error("Bid not found");
+    }
+
+    // Only allow users to view their own bids (or admins to view any bid)
+    if (
+      bid.bidder._id.toString() !== req.user._id.toString() &&
+      req.user.role !== "admin"
+    ) {
+      res.status(403);
+      throw new Error("Access denied");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: bid,
+    });
+  } catch (error) {
+    res.status(500);
+    throw new Error(`Failed to get bid: ${error.message}`);
+  }
+};
+
 module.exports = {
   placeBid,
   getProductBids,
   getUserBids,
   getBidStats,
+  getBid,
 };

@@ -18,6 +18,8 @@ import CreateProduct from "./components/products/CreateProduct";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import UserBidsPage from "./pages/UserBidsPage";
 import WalletPage from "./pages/WalletPage";
+import FeedbackPage from "./pages/FeedbackPage";
+import FeedbackSubmissionPage from "./pages/FeedbackSubmissionPage";
 import TokenDebugger from "./components/debug/TokenDebugger";
 
 const App = () => {
@@ -44,6 +46,11 @@ const App = () => {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/bids" element={<UserBidsPage />} />
                 <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/feedback/:productId" element={<FeedbackPage />} />
+                <Route
+                  path="/feedback/submit/:productId"
+                  element={<FeedbackSubmissionPage />}
+                />
               </Route>
 
               {/* Protected routes for vendors */}

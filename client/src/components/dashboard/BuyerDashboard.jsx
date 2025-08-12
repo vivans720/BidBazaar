@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Link } from "react-router-dom";
 import { getUserBids } from "../../utils/api";
 import WalletBalance from "../wallet/WalletBalance";
+import PendingFeedback from "../feedback/PendingFeedback";
 import { formatCurrency } from "../../utils/format";
 import api from "../../utils/api";
 
@@ -164,6 +165,16 @@ const BuyerDashboard = () => {
               </>
             )}
           </div>
+        </div>
+
+        {/* Pending Feedback Section */}
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="text-lg font-medium text-gray-900">
+              Pending Reviews
+            </h4>
+          </div>
+          <PendingFeedback />
         </div>
 
         <div className="mt-8">

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { getBidStats } from '../../utils/api';
-import { formatCurrency } from '../../utils/format';
+import React, { useState, useEffect } from "react";
+import { getBidStats } from "../../utils/api";
+import { formatCurrency } from "../../utils/format";
 
 // Component to display platform-wide bid statistics
 const BidStats = () => {
@@ -11,7 +11,7 @@ const BidStats = () => {
     wonBids: 0,
     lostBids: 0,
     highestBidAmount: 0,
-    averageBidAmount: 0
+    averageBidAmount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,8 +24,8 @@ const BidStats = () => {
         setStats(response.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching bid statistics:', err);
-        setError('Failed to load bid statistics');
+        console.error("Error fetching bid statistics:", err);
+        setError("Failed to load bid statistics");
         setLoading(false);
       }
     };
@@ -36,7 +36,9 @@ const BidStats = () => {
   if (loading) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Platform Bid Statistics</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Platform Bid Statistics
+        </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="animate-pulse">
@@ -52,60 +54,67 @@ const BidStats = () => {
   if (error) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Platform Bid Statistics</h3>
-        <div className="bg-red-50 p-4 rounded-md text-red-700">
-          {error}
-        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Platform Bid Statistics
+        </h3>
+        <div className="bg-red-50 p-4 rounded-md text-red-700">{error}</div>
       </div>
     );
   }
 
   const statItems = [
-    { 
-      label: 'Total Bids', 
+    {
+      label: "Total Bids",
       value: stats.total,
-      color: 'bg-blue-100 text-blue-800'
+      color: "bg-blue-100 text-blue-800",
     },
-    { 
-      label: 'Bids Today', 
+    {
+      label: "Bids Today",
       value: stats.today,
-      color: 'bg-green-100 text-green-800'
+      color: "bg-green-100 text-green-800",
     },
-    { 
-      label: 'Active Bids', 
+    {
+      label: "Active Bids",
       value: stats.activeBids,
-      color: 'bg-purple-100 text-purple-800'
+      color: "bg-purple-100 text-purple-800",
     },
-    { 
-      label: 'Won Bids', 
+    {
+      label: "Won Bids",
       value: stats.wonBids,
-      color: 'bg-amber-100 text-amber-800'
+      color: "bg-amber-100 text-amber-800",
     },
-    { 
-      label: 'Lost Bids', 
+    {
+      label: "Lost Bids",
       value: stats.lostBids,
-      color: 'bg-red-100 text-red-800'
+      color: "bg-red-100 text-red-800",
     },
-    { 
-      label: 'Highest Bid', 
+    {
+      label: "Highest Bid",
       value: formatCurrency(stats.highestBidAmount),
-      color: 'bg-cyan-100 text-cyan-800'
+      color: "bg-cyan-100 text-cyan-800",
     },
-    { 
-      label: 'Average Bid', 
+    {
+      label: "Average Bid",
       value: formatCurrency(stats.averageBidAmount),
-      color: 'bg-fuchsia-100 text-fuchsia-800'
-    }
+      color: "bg-fuchsia-100 text-fuchsia-800",
+    },
   ];
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Platform Bid Statistics</h3>
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Platform Bid Statistics
+      </h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {statItems.map((item, index) => (
-          <div key={index} className={`p-4 rounded-lg ${item.color.split(' ')[0]}`}>
+          <div
+            key={index}
+            className={`p-4 rounded-lg ${item.color.split(" ")[0]}`}
+          >
             <p className="text-sm font-medium">{item.label}</p>
-            <p className={`text-2xl font-bold ${item.color.split(' ')[1]}`}>{item.value}</p>
+            <p className={`text-2xl font-bold ${item.color.split(" ")[1]}`}>
+              {item.value}
+            </p>
           </div>
         ))}
       </div>
@@ -113,4 +122,4 @@ const BidStats = () => {
   );
 };
 
-export default BidStats; 
+export default BidStats;

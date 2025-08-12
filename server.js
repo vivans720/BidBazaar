@@ -23,6 +23,7 @@ const productRoutes = require("./routes/productRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const bidRoutes = require("./routes/bidRoutes");
 const walletRoutes = require("./routes/walletRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
 
 const app = express();
 
@@ -188,6 +189,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/bids", bidRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 // Basic route
 app.get("/", (req, res) => {

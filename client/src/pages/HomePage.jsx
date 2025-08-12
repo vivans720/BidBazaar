@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../utils/api';
-import { getBidStats } from '../utils/api';
-import { formatCurrency } from '../utils/format';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import api from "../utils/api";
+import { getBidStats } from "../utils/api";
+import { formatCurrency } from "../utils/format";
 
 const HomePage = () => {
   const [stats, setStats] = useState({
@@ -13,7 +13,7 @@ const HomePage = () => {
     wonBids: 0,
     todayBids: 0,
     highestBid: 0,
-    averageBid: 0
+    averageBid: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -22,10 +22,10 @@ const HomePage = () => {
       try {
         // Fetch product stats and bid stats in parallel
         const [productsResponse, bidsResponse] = await Promise.all([
-          api.get('/products/stats'),
-          getBidStats()
+          api.get("/products/stats"),
+          getBidStats(),
         ]);
-        
+
         setStats({
           totalProducts: productsResponse.data.total || 0,
           activeAuctions: productsResponse.data.active || 0,
@@ -34,10 +34,10 @@ const HomePage = () => {
           wonBids: bidsResponse.data.wonBids || 0,
           todayBids: bidsResponse.data.today || 0,
           highestBid: bidsResponse.data.highestBidAmount || 0,
-          averageBid: bidsResponse.data.averageBidAmount || 0
+          averageBid: bidsResponse.data.averageBidAmount || 0,
         });
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error("Error fetching stats:", error);
         // Use some placeholder numbers if the API fails
         setStats({
           totalProducts: 120,
@@ -47,7 +47,7 @@ const HomePage = () => {
           wonBids: 75,
           todayBids: 12,
           highestBid: 25000,
-          averageBid: 4500
+          averageBid: 4500,
         });
       } finally {
         setLoading(false);
@@ -74,7 +74,8 @@ const HomePage = () => {
             Online Auction Site
           </h1>
           <p className="mt-6 text-xl text-gray-300 max-w-3xl">
-            Discover unique handcrafted items from artisans around the country. Bid on exclusive products and support local creators.
+            Discover unique handcrafted items from artisans around the country.
+            Bid on exclusive products and support local creators.
           </p>
           <div className="mt-10 flex space-x-4">
             <Link
@@ -104,7 +105,7 @@ const HomePage = () => {
               Join our growing community of buyers and sellers
             </p>
           </div>
-          
+
           <div className="mt-10">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="pt-6">
@@ -178,17 +179,32 @@ const HomePage = () => {
 
             <div className="mt-10 bg-white overflow-hidden shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Bid Activity</h3>
+                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                  Bid Activity
+                </h3>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                        <svg className="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="h-6 w-6 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                       <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">Active Bids</dt>
+                        <dt className="text-sm font-medium text-gray-500">
+                          Active Bids
+                        </dt>
                         <dd className="text-2xl font-semibold text-blue-700">
                           {loading ? (
                             <div className="animate-pulse h-8 w-16 bg-blue-200 rounded"></div>
@@ -203,12 +219,25 @@ const HomePage = () => {
                   <div className="bg-green-50 rounded-lg p-4">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
-                        <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="h-6 w-6 text-green-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                       <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">Completed Auctions</dt>
+                        <dt className="text-sm font-medium text-gray-500">
+                          Completed Auctions
+                        </dt>
                         <dd className="text-2xl font-semibold text-green-700">
                           {loading ? (
                             <div className="animate-pulse h-8 w-16 bg-green-200 rounded"></div>
@@ -223,12 +252,25 @@ const HomePage = () => {
                   <div className="bg-amber-50 rounded-lg p-4">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 bg-amber-100 rounded-md p-3">
-                        <svg className="h-6 w-6 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="h-6 w-6 text-amber-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </div>
                       <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">Bids Today</dt>
+                        <dt className="text-sm font-medium text-gray-500">
+                          Bids Today
+                        </dt>
                         <dd className="text-2xl font-semibold text-amber-700">
                           {loading ? (
                             <div className="animate-pulse h-8 w-16 bg-amber-200 rounded"></div>
@@ -250,12 +292,15 @@ const HomePage = () => {
       <div className="py-16 bg-gray-50 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-base font-semibold text-primary-600 tracking-wide uppercase">Features</h2>
+            <h2 className="text-base font-semibold text-primary-600 tracking-wide uppercase">
+              Features
+            </h2>
             <p className="mt-1 text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight">
               Why Choose Our Platform
             </p>
             <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-              We provide a secure and easy-to-use platform for buying and selling unique items.
+              We provide a secure and easy-to-use platform for buying and
+              selling unique items.
             </p>
           </div>
 
@@ -266,14 +311,28 @@ const HomePage = () => {
                   <div className="-mt-6">
                     <div>
                       <span className="inline-flex items-center justify-center p-3 bg-primary-500 rounded-md shadow-lg">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="h-6 w-6 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
                       </span>
                     </div>
-                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Real-Time Bidding</h3>
+                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">
+                      Real-Time Bidding
+                    </h3>
                     <p className="mt-5 text-base text-gray-500">
-                      Experience the excitement of live auctions with real-time updates and notifications.
+                      Experience the excitement of live auctions with real-time
+                      updates and notifications.
                     </p>
                   </div>
                 </div>
@@ -284,14 +343,28 @@ const HomePage = () => {
                   <div className="-mt-6">
                     <div>
                       <span className="inline-flex items-center justify-center p-3 bg-primary-500 rounded-md shadow-lg">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <svg
+                          className="h-6 w-6 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
                         </svg>
                       </span>
                     </div>
-                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Secure Payments</h3>
+                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">
+                      Secure Payments
+                    </h3>
                     <p className="mt-5 text-base text-gray-500">
-                      Our platform ensures safe and secure transactions for both buyers and sellers.
+                      Our platform ensures safe and secure transactions for both
+                      buyers and sellers.
                     </p>
                   </div>
                 </div>
@@ -302,14 +375,28 @@ const HomePage = () => {
                   <div className="-mt-6">
                     <div>
                       <span className="inline-flex items-center justify-center p-3 bg-primary-500 rounded-md shadow-lg">
-                        <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        <svg
+                          className="h-6 w-6 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                          />
                         </svg>
                       </span>
                     </div>
-                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">Unique Products</h3>
+                    <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">
+                      Unique Products
+                    </h3>
                     <p className="mt-5 text-base text-gray-500">
-                      Discover one-of-a-kind items from talented artisans and creators worldwide.
+                      Discover one-of-a-kind items from talented artisans and
+                      creators worldwide.
                     </p>
                   </div>
                 </div>
@@ -327,7 +414,8 @@ const HomePage = () => {
             <span className="block">Create an account today.</span>
           </h2>
           <p className="mt-4 text-lg leading-6 text-primary-200">
-            Join our community of buyers and sellers and discover unique items you won't find anywhere else.
+            Join our community of buyers and sellers and discover unique items
+            you won't find anywhere else.
           </p>
           <Link
             to="/register"

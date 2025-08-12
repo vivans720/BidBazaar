@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import { toast } from "react-toastify";
 import ProductDetail from "../products/ProductDetail";
-import { useAuth } from "../../context/AuthContext";
 import BidStats from "./BidStats";
 import {
   UserCircleIcon,
