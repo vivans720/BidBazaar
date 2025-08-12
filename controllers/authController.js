@@ -9,8 +9,15 @@ const path = require("path");
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
+  console.log("Registration attempt:", {
+    body: req.body,
+    files: req.files ? Object.keys(req.files) : "No files",
+    headers: req.headers["content-type"],
+  });
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log("Validation errors:", errors.array());
     return res.status(400).json({ errors: errors.array() });
   }
 
@@ -57,15 +64,31 @@ exports.register = async (req, res) => {
 
       // Create upload directory if it doesn't exist
       const uploadDir = "./uploads/users";
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+      try {
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+      } catch (dirError) {
+        console.error("Error creating upload directory:", dirError);
+        return res.status(500).json({
+          success: false,
+          error: "File upload configuration error",
+        });
       }
 
       // Create custom filename
       const fileName = `user-${Date.now()}${path.parse(file.name).ext}`;
 
       // Move file to upload directory
-      await file.mv(`${uploadDir}/${fileName}`);
+      try {
+        await file.mv(`${uploadDir}/${fileName}`);
+      } catch (uploadError) {
+        console.error("Error uploading file:", uploadError);
+        return res.status(500).json({
+          success: false,
+          error: "Failed to upload profile image",
+        });
+      }
 
       // Set profile image path with absolute URL
       const profileImageUrl = `${req.protocol}://${req.get(
@@ -98,9 +121,42 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
+
+    // Handle specific MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: "Email already exists",
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const validationErrors = Object.values(error.errors).map(
+        (err) => err.message
+      );
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        details: validationErrors,
+      });
+    }
+
+    // Handle file upload errors
+    if (error.message && error.message.includes("upload")) {
+      return res.status(400).json({
+        success: false,
+        error: "File upload failed",
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: "Server Error",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };

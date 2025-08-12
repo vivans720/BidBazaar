@@ -1,15 +1,15 @@
-import React, { createContext, useReducer, useContext, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import api from '../utils/api';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useReducer, useContext, useEffect } from "react";
+import { toast } from "react-toastify";
+import api from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
 // Initial state
 const initialState = {
-  token: localStorage.getItem('token'),
+  token: localStorage.getItem("token"),
   isAuthenticated: false,
   loading: false,
   user: null,
-  error: null
+  error: null,
 };
 
 // Create context
@@ -21,72 +21,72 @@ const AuthContext = createContext({
   loadUser: async () => {},
   updatePassword: async () => {},
   updateProfile: async () => {},
-  clearErrors: () => {}
+  clearErrors: () => {},
 });
 
 // Reducer
 const authReducer = (state, action) => {
   switch (action.type) {
-    case 'USER_LOADED':
+    case "USER_LOADED":
       return {
         ...state,
         isAuthenticated: true,
         loading: false,
-        user: action.payload
+        user: action.payload,
       };
-    case 'AUTH_LOADING':
+    case "AUTH_LOADING":
       return {
         ...state,
         loading: true,
-        error: null
+        error: null,
       };
-    case 'LOGIN_SUCCESS':
-    case 'REGISTER_SUCCESS':
-      localStorage.setItem('token', action.payload);
+    case "LOGIN_SUCCESS":
+    case "REGISTER_SUCCESS":
+      localStorage.setItem("token", action.payload);
       return {
         ...state,
         token: action.payload,
         isAuthenticated: true,
         loading: false,
-        error: null
+        error: null,
       };
-    case 'AUTH_ERROR':
-    case 'LOGIN_FAIL':
-    case 'REGISTER_FAIL':
-    case 'LOGOUT':
-      localStorage.removeItem('token');
+    case "AUTH_ERROR":
+    case "LOGIN_FAIL":
+    case "REGISTER_FAIL":
+    case "LOGOUT":
+      localStorage.removeItem("token");
       return {
         ...state,
         token: null,
         isAuthenticated: false,
         loading: false,
         user: null,
-        error: action.type === 'LOGOUT' ? null : action.payload
+        error: action.type === "LOGOUT" ? null : action.payload,
       };
-    case 'UPDATE_PASSWORD_SUCCESS':
+    case "UPDATE_PASSWORD_SUCCESS":
       return {
         ...state,
         loading: false,
-        error: null
+        error: null,
       };
-    case 'UPDATE_PROFILE_SUCCESS':
+    case "UPDATE_PROFILE_SUCCESS":
       return {
         ...state,
         loading: false,
         user: action.payload,
-        error: null
+        error: null,
       };
-    case 'UPDATE_PASSWORD_FAIL':
-    case 'UPDATE_PROFILE_FAIL':
+    case "UPDATE_PASSWORD_FAIL":
+    case "UPDATE_PROFILE_FAIL":
       return {
         ...state,
         loading: false,
-        error: action.payload
+        error: action.payload,
       };
-    case 'CLEAR_ERRORS':
+    case "CLEAR_ERRORS":
       return {
         ...state,
-        error: null
+        error: null,
       };
     default:
       return state;
@@ -101,24 +101,24 @@ export const AuthProvider = ({ children }) => {
   // Set auth token
   const setAuthToken = (token) => {
     if (token) {
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
     }
   };
 
   // Load user
   const loadUser = async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       try {
-        console.log('Loading user data with token:', token);
-        const res = await api.get('/users/me');
-        console.log('User data loaded:', res.data);
-        dispatch({ type: 'USER_LOADED', payload: res.data.data });
+        console.log("Loading user data with token:", token);
+        const res = await api.get("/users/me");
+        console.log("User data loaded:", res.data);
+        dispatch({ type: "USER_LOADED", payload: res.data.data });
       } catch (err) {
-        console.error('Error loading user:', err.response?.data || err);
-        dispatch({ type: 'AUTH_ERROR' });
+        console.error("Error loading user:", err.response?.data || err);
+        dispatch({ type: "AUTH_ERROR" });
       }
     }
   };
@@ -127,43 +127,47 @@ export const AuthProvider = ({ children }) => {
   const register = async (formData) => {
     try {
       dispatch({
-        type: 'SET_LOADING'
+        type: "AUTH_LOADING",
       });
 
-      // Set headers based on whether formData is FormData object or regular object
-      const headers = {};
       const isFormData = formData instanceof FormData;
-      
-      if (!isFormData) {
-        headers['Content-Type'] = 'application/json';
-      }
-      
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers,
-        body: isFormData ? formData : JSON.stringify(formData)
-      });
+      let res;
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+      if (isFormData) {
+        // For FormData, we need to remove the default Content-Type header
+        // to let the browser set it with the boundary
+        res = await api.post("/auth/register", formData, {
+          headers: {
+            "Content-Type": undefined,
+          },
+        });
+      } else {
+        res = await api.post("/auth/register", formData);
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
+      const token = res.data.token;
+      setAuthToken(token);
 
-      // Get user info
-      await loadUser();
+      dispatch({ type: "REGISTER_SUCCESS", payload: token });
 
-      dispatch({
-        type: 'REGISTER_SUCCESS'
-      });
+      // Load user data immediately after successful registration
+      try {
+        const userRes = await api.get("/users/me");
+        console.log("User data loaded after registration:", userRes.data);
+        dispatch({ type: "USER_LOADED", payload: userRes.data.data });
+      } catch (userErr) {
+        console.error(
+          "Error loading user after registration:",
+          userErr.response?.data || userErr
+        );
+        dispatch({ type: "AUTH_ERROR" });
+      }
     } catch (error) {
-      console.error('Register error:', error);
+      console.error("Register error:", error);
+      setAuthToken(null);
       dispatch({
-        type: 'AUTH_ERROR',
-        payload: error.message
+        type: "AUTH_ERROR",
+        payload: error.response?.data?.error || "Registration failed",
       });
     }
   };
@@ -171,62 +175,62 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (credentials) => {
     try {
-      dispatch({ type: 'AUTH_LOADING' });
-      console.log('Attempting login with credentials:', credentials);
-      
-      const res = await api.post('/auth/login', credentials);
-      console.log('Login response:', res.data);
-      
+      dispatch({ type: "AUTH_LOADING" });
+      console.log("Attempting login with credentials:", credentials);
+
+      const res = await api.post("/auth/login", credentials);
+      console.log("Login response:", res.data);
+
       const token = res.data.token;
       setAuthToken(token);
-      
-      dispatch({ type: 'LOGIN_SUCCESS', payload: token });
-      
-      toast.success('Signed in successfully!');
-      
+
+      dispatch({ type: "LOGIN_SUCCESS", payload: token });
+
+      toast.success("Signed in successfully!");
+
       // Load user data immediately after successful login
       try {
-        const userRes = await api.get('/users/me');
-        console.log('User data loaded:', userRes.data);
-        
+        const userRes = await api.get("/users/me");
+        console.log("User data loaded:", userRes.data);
+
         if (!userRes.data.data.role) {
-          console.error('No role found in user data:', userRes.data);
-          throw new Error('User role not found');
+          console.error("No role found in user data:", userRes.data);
+          throw new Error("User role not found");
         }
-        
-        dispatch({ type: 'USER_LOADED', payload: userRes.data.data });
+
+        dispatch({ type: "USER_LOADED", payload: userRes.data.data });
       } catch (userErr) {
-        console.error('Error loading user:', userErr.response?.data || userErr);
-        dispatch({ type: 'AUTH_ERROR' });
-        toast.error('Error loading user data. Please try logging in again.');
+        console.error("Error loading user:", userErr.response?.data || userErr);
+        dispatch({ type: "AUTH_ERROR" });
+        toast.error("Error loading user data. Please try logging in again.");
       }
     } catch (err) {
-      console.error('Login error:', err.response?.data || err);
+      console.error("Login error:", err.response?.data || err);
       setAuthToken(null);
       dispatch({
-        type: 'LOGIN_FAIL',
-        payload: err.response?.data?.error || 'Login failed'
+        type: "LOGIN_FAIL",
+        payload: err.response?.data?.error || "Login failed",
       });
-      toast.error(err.response?.data?.error || 'Login failed');
+      toast.error(err.response?.data?.error || "Login failed");
     }
   };
 
   // Logout
   const logout = () => {
-    dispatch({ type: 'LOGOUT' });
-    toast.success('Signed out successfully');
-    navigate('/'); // Navigate to home page after logout
+    dispatch({ type: "LOGOUT" });
+    toast.success("Signed out successfully");
+    navigate("/"); // Navigate to home page after logout
   };
 
   // Update password
   const updatePassword = async (passwordData) => {
     try {
-      await api.put('/auth/updatepassword', passwordData);
-      dispatch({ type: 'UPDATE_PASSWORD_SUCCESS' });
+      await api.put("/auth/updatepassword", passwordData);
+      dispatch({ type: "UPDATE_PASSWORD_SUCCESS" });
     } catch (err) {
       dispatch({
-        type: 'UPDATE_PASSWORD_FAIL',
-        payload: err.response?.data?.error || 'Password update failed'
+        type: "UPDATE_PASSWORD_FAIL",
+        payload: err.response?.data?.error || "Password update failed",
       });
     }
   };
@@ -235,42 +239,35 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (formData) => {
     try {
       dispatch({
-        type: 'SET_LOADING'
+        type: "AUTH_LOADING",
       });
 
-      // Check if we're dealing with FormData or regular object
       const isFormData = formData instanceof FormData;
-      const headers = {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      };
-      
-      if (!isFormData) {
-        headers['Content-Type'] = 'application/json';
-      }
+      let res;
 
-      const response = await fetch('/api/users/updateprofile', {
-        method: 'PUT',
-        headers,
-        body: isFormData ? formData : JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile');
+      if (isFormData) {
+        // For FormData, we need to remove the default Content-Type header
+        // to let the browser set it with the boundary
+        res = await api.put("/users/updateprofile", formData, {
+          headers: {
+            "Content-Type": undefined,
+          },
+        });
+      } else {
+        res = await api.put("/users/updateprofile", formData);
       }
 
       dispatch({
-        type: 'UPDATE_USER',
-        payload: data.data
+        type: "UPDATE_PROFILE_SUCCESS",
+        payload: res.data.data,
       });
 
-      return data;
+      return res.data;
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error("Update profile error:", error);
       dispatch({
-        type: 'AUTH_ERROR',
-        payload: error.message
+        type: "UPDATE_PROFILE_FAIL",
+        payload: error.response?.data?.error || "Failed to update profile",
       });
       throw error;
     }
@@ -278,13 +275,13 @@ export const AuthProvider = ({ children }) => {
 
   // Clear errors
   const clearErrors = () => {
-    dispatch({ type: 'CLEAR_ERRORS' });
+    dispatch({ type: "CLEAR_ERRORS" });
   };
 
   // Effect to load user on mount and token changes
   useEffect(() => {
-    console.log('AuthProvider mounted or token changed');
-    const token = localStorage.getItem('token');
+    console.log("AuthProvider mounted or token changed");
+    const token = localStorage.getItem("token");
     if (token) {
       loadUser();
     }
@@ -300,7 +297,7 @@ export const AuthProvider = ({ children }) => {
         loadUser,
         updatePassword,
         updateProfile,
-        clearErrors
+        clearErrors,
       }}
     >
       {children}
@@ -312,13 +309,13 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
 
   // Add these derived values for easier access in components
   return {
     ...context,
     user: context.state.user,
-    isAuthenticated: context.state.isAuthenticated
+    isAuthenticated: context.state.isAuthenticated,
   };
 };
