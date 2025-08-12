@@ -137,8 +137,7 @@ npm run client
 ```
 
 6. **Access the application**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+     bidbazaar.pages.dev
 
 ## 📋 API Endpoints
 
@@ -246,50 +245,3 @@ The bidding system is designed for fairness and efficiency:
 - **Input validation** and sanitization
 - **CORS protection** for cross-origin requests
 
-## 🌐 Deployment
-
-### Backend Deployment (Heroku/Railway/Render)
-1. Set environment variables on your hosting platform
-2. Ensure MongoDB connection string is configured
-3. Set `NODE_ENV=production`
-4. Deploy using platform-specific instructions
-
-### Frontend Deployment (Netlify/Vercel)
-1. Build the React app: `npm run build`
-2. Deploy the `build` directory
-3. Configure redirects for React Router
-4. Set environment variables for API endpoints
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-
-## 🙏 Acknowledgments
-
-- **React** team for the amazing frontend library
-- **Express.js** for the robust backend framework
-- **MongoDB** for the flexible database solution
-- **Tailwind CSS** for the utility-first CSS framework
-- **Heroicons** for the beautiful icon set
-
-## 📸 Screenshots
-
-*Add screenshots of your application here to showcase the UI*
-
----
-
-⭐ **Star this repository if you found it helpful!**
