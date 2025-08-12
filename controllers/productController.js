@@ -177,10 +177,10 @@ exports.getProduct = async (req, res) => {
             }
           }
 
-          // Refund all losing bidders
+          // Refund all losing bidders (exclude ALL bids from the winning user)
           const losingBids = await Bid.find({
             product: product._id,
-            _id: { $ne: highestBid._id },
+            bidder: { $ne: highestBid.bidder._id },
           });
 
           for (const losingBid of losingBids) {
