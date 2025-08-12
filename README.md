@@ -1,71 +1,247 @@
-# Online Bidding/Auction Site - BidBazaar
+# 🏷️ BidBazaar - Online Auction Platform
 
-A MERN stack application for an online bidding/auction platform.
+A full-stack MERN (MongoDB, Express.js, React, Node.js) application for online bidding and auctions with integrated wallet system and real-time bidding capabilities.
 
-## 1.User Management Module
+![BidBazaar](client/src/assets/logo.png)
 
-The first module implemented includes:
+## 🌟 Features
 
-- User registration and authentication
-- Role-based access control (Admin, Buyer, Vendor)
-- User profile management
-- Admin user management capabilities
+### 🔐 Authentication & Authorization
+- **JWT-based authentication** with role-based access control
+- **Three user roles**: Admin, Vendor (Seller), and Buyer
+- **Secure registration/login** with profile image upload
+- **Password encryption** using bcryptjs
 
-## Setup Instructions
+### 💰 Integrated Wallet System
+- **Digital wallet** for each user with INR currency support
+- **Secure fund deposits** via multiple payment methods (Debit Card, Bank Transfer, UPI)
+- **Automatic bid deductions** and refunds
+- **Complete transaction history** with detailed audit trail
+- **Real-time balance updates** during bidding
 
-1. Install dependencies:
-   ```
-   npm install
-   ```
+### 🎯 Smart Bidding System
+- **Incremental bidding** - only charges the difference when increasing bids
+- **Automatic refunds** for outbid users
+- **Insufficient funds protection** prevents overbidding
+- **Real-time bid updates** and notifications
+- **Auction timer** with automatic closure
 
-2. Set up environment variables:
-   - Create a `.env` file in the root directory
-   - Add the following variables:
-     ```
-     PORT=5000
-     MONGO_URI=mongodb://localhost:27017/auction-site
-     JWT_SECRET=your_jwt_secret_key_change_in_production
-     JWT_EXPIRE=30d
-     ```
+### 🛍️ Product Management
+- **Product listings** with image uploads via Cloudinary
+- **Category-based organization** for easy browsing
+- **Detailed product information** with descriptions and starting prices
+- **Auction duration management** with automatic expiry handling
 
-3. Start the development server:
-   ```
-   npm run dev
-   ```
+### 👥 User Management
+- **Comprehensive user profiles** with contact information
+- **Role-based dashboards** for different user types
+- **Profile image uploads** with file validation
+- **Admin user management** capabilities
 
-## API Testing with Postman
+### 📊 Dashboard & Analytics
+- **Buyer Dashboard**: Wallet balance, active bids, transaction history
+- **Vendor Dashboard**: Product listings, sales analytics, earnings
+- **Admin Dashboard**: User management, platform oversight
+- **Real-time statistics** and financial tracking
 
-Import the provided Postman collection and environment files from the `postman` directory to test the API endpoints.
+## 🏗️ Tech Stack
 
-### Authentication Endpoints
+### Backend
+- **Node.js** with Express.js framework
+- **MongoDB** with Mongoose ODM
+- **JWT** for authentication
+- **Cloudinary** for image storage
+- **Express FileUpload** for file handling
+- **bcryptjs** for password hashing
 
-- POST `/api/auth/register` - Register a new user
-- POST `/api/auth/login` - Login a user
-- GET `/api/auth/logout` - Logout a user
-- PUT `/api/auth/updatepassword` - Update user password
+### Frontend
+- **React 18** with modern hooks
+- **React Router Dom** for navigation
+- **Tailwind CSS** for styling
+- **Heroicons** for UI icons
+- **Framer Motion** for animations
+- **React Hot Toast** for notifications
+- **Axios** for API calls
 
-### User Endpoints
+### Development Tools
+- **Vite** for fast development builds
+- **Concurrently** for running frontend/backend together
+- **Nodemon** for backend auto-restart
+- **ESLint** for code quality
 
-- GET `/api/users/me` - Get current logged in user
-- PUT `/api/users/updateprofile` - Update user profile
-- GET `/api/users` - Get all users (Admin only)
-- GET `/api/users/:id` - Get single user (Admin only)
-- POST `/api/users` - Create user (Admin only)
-- PUT `/api/users/:id` - Update user (Admin only)
-- DELETE `/api/users/:id` - Delete user (Admin only)
+## 🚀 Quick Start
 
-## Authentication
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB (local or Atlas)
+- npm or yarn package manager
 
-The API uses JWT (JSON Web Token) for authentication. To access protected routes:
+### Installation
 
-1. Register or login to get a token
-2. Include the token in the Authorization header of your requests:
-   ```
-   Authorization: Bearer <your_token>
-   ```
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/bidbazaar.git
+cd bidbazaar
+```
 
-## Role-Based Access Control
+2. **Install backend dependencies**
+```bash
+npm install
+```
 
-- **Admin**: Full access to all endpoints
-- **Buyer**: Access to their own profile and auction-related endpoints
-- **Vendor**: Access to their own profile, product listings, and auction-related endpoints
+3. **Install frontend dependencies**
+```bash
+cd client
+npm install
+cd ..
+```
+
+4. **Environment Setup**
+Create a `.env` file in the root directory:
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb://localhost:27017/bidbazaar
+
+# JWT Configuration
+JWT_SECRET=your_super_secret_jwt_key_change_in_production
+JWT_EXPIRE=30d
+
+# Cloudinary Configuration (for image uploads)
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+# File Upload Configuration
+FILE_UPLOAD_PATH=./uploads
+MAX_FILE_UPLOAD=1000000
+```
+
+5. **Start the application**
+
+For development (runs both frontend and backend):
+```bash
+npm run dev
+```
+
+Or start them separately:
+```bash
+# Backend only
+npm run server
+
+# Frontend only (in another terminal)
+npm run client
+```
+
+6. **Access the application**
+     bidbazaar.pages.dev
+
+## 📋 API Endpoints
+
+### Authentication
+```
+POST /api/auth/register     # Register new user
+POST /api/auth/login        # User login
+GET  /api/auth/logout       # User logout
+PUT  /api/auth/updatepassword # Update password
+```
+
+### Users
+```
+GET  /api/users/me          # Get current user profile
+PUT  /api/users/updateprofile # Update user profile
+POST /api/users/upload-image  # Upload profile image
+GET  /api/users             # Get all users (Admin only)
+```
+
+### Wallet
+```
+GET  /api/wallet            # Get wallet balance
+POST /api/wallet/deposit    # Deposit funds
+POST /api/wallet/withdraw   # Withdraw funds
+GET  /api/wallet/transactions # Get transaction history
+GET  /api/wallet/stats      # Get wallet statistics
+```
+
+### Products
+```
+GET  /api/products          # Get all products
+GET  /api/products/:id      # Get single product
+POST /api/products          # Create product (Vendor/Admin)
+PUT  /api/products/:id      # Update product (Vendor/Admin)
+DELETE /api/products/:id    # Delete product (Vendor/Admin)
+```
+
+### Bidding
+```
+GET  /api/bids              # Get all bids
+GET  /api/bids/user/:id     # Get user's bids
+POST /api/bids              # Place a bid
+GET  /api/bids/product/:id  # Get product bids
+```
+
+## 🗂️ Project Structure
+
+```
+BidBazaar/
+├── client/                 # React frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   │   ├── auth/       # Authentication components
+│   │   │   ├── bids/       # Bidding components
+│   │   │   ├── dashboard/  # Dashboard components
+│   │   │   ├── layout/     # Layout components
+│   │   │   ├── products/   # Product components
+│   │   │   └── wallet/     # Wallet components
+│   │   ├── context/        # React context providers
+│   │   ├── pages/          # Page components
+│   │   ├── utils/          # Utility functions
+│   │   └── assets/         # Static assets
+│   └── package.json
+├── controllers/            # Express route controllers
+├── models/                 # Mongoose schemas
+├── routes/                 # API routes
+├── middleware/             # Custom middleware
+├── uploads/                # File upload directory
+├── server.js              # Express server setup
+├── package.json
+└── README.md
+```
+
+## 🔑 Key Features Explained
+
+### 💳 Wallet System
+The integrated wallet system ensures secure and transparent financial transactions:
+- Users deposit money using various payment methods
+- Bid amounts are immediately deducted from wallet balance
+- Automatic refunds when outbid by other users
+- Winners keep their final bid amount deducted (no additional charges)
+- Complete transaction audit trail
+
+### 📈 Smart Bidding
+The bidding system is designed for fairness and efficiency:
+- **Incremental Charging**: When you increase your bid from ₹500 to ₹600, only ₹100 is deducted
+- **Automatic Refunds**: Previous bidders get immediate refunds when outbid
+- **Balance Protection**: Cannot bid more than available wallet balance
+- **Real-time Updates**: Instant bid updates across all users
+
+### 🎨 Modern UI/UX
+- **Responsive design** that works on all devices
+- **Clean, intuitive interface** with Tailwind CSS
+- **Smooth animations** with Framer Motion
+- **Toast notifications** for user feedback
+- **Loading states** and error handling
+
+## 🔒 Security Features
+
+- **JWT authentication** with secure token handling
+- **Password hashing** with bcryptjs
+- **File upload validation** with size and type restrictions
+- **Role-based access control** for API endpoints
+- **Input validation** and sanitization
+- **CORS protection** for cross-origin requests
+
