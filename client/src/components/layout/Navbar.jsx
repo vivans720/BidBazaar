@@ -13,6 +13,9 @@ import logo from "../../assets/logo.png";
 // Navigation items configuration
 const getNavigation = (isAuthenticated, userRole) => [
   { name: "Home", href: isAuthenticated ? "/dashboard" : "/", public: true },
+  { name: "About", href: "/about", public: true },
+  { name: "Contact", href: "/contact", public: true },
+  { name: "FAQ", href: "/faq", public: true },
   {
     name: "Auctions",
     href: "/products",
