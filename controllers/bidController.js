@@ -117,30 +117,6 @@ const placeBid = asyncHandler(async (req, res) => {
 
   // Start transaction-like operations
   try {
-    // If there's a previous highest bidder (and it's not the current user), refund their bid
-    if (
-      highestBid &&
-      highestBid.bidder.toString() !== req.user._id.toString()
-    ) {
-      const previousBidderWallet = await Wallet.findOne({
-        user: highestBid.bidder,
-      });
-      if (previousBidderWallet) {
-        await previousBidderWallet.addFunds(
-          highestBid.amount,
-          "bid_refund",
-          `Bid refund for product: ${product.title || product.name}`,
-          highestBid._id,
-          product._id
-        );
-
-        // Update previous bidder's cached balance
-        await User.findByIdAndUpdate(highestBid.bidder, {
-          walletBalance: previousBidderWallet.balance,
-        });
-      }
-    }
-
     // Create bid first to get the bid ID
     const bid = await Bid.create({
       product: productId,
