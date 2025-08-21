@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import Lenis from "lenis";
 
 const LenisContext = createContext();
@@ -13,6 +13,7 @@ export const useLenis = () => {
 
 export const LenisProvider = ({ children }) => {
   const lenisRef = useRef(null);
+  const [lenisInstance, setLenisInstance] = useState(null);
 
   useEffect(() => {
     // Initialize Lenis
@@ -25,8 +26,8 @@ export const LenisProvider = ({ children }) => {
       smoothTouch: false,
       touchMultiplier: 2,
       infinite: false,
-      autoRaf: true,
     });
+    setLenisInstance(lenisRef.current);
 
     // Request animation frame
     function raf(time) {
@@ -62,7 +63,7 @@ export const LenisProvider = ({ children }) => {
   };
 
   const value = {
-    lenis: lenisRef.current,
+    lenis: lenisInstance,
     scrollTo,
     start,
     stop,

@@ -27,8 +27,9 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
             : `/feedback/seller/${sellerId}`;
 
         const response = await api.get(endpoint);
-        setFeedback(response.data.feedback);
-        setStats(response.data.stats);
+        const payload = response.data?.data || {};
+        setFeedback(payload.feedback || []);
+        setStats(payload.stats || null);
       } catch (error) {
         console.error("Failed to fetch feedback:", error);
       } finally {
@@ -72,6 +73,17 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
   const FeedbackStats = () => {
     if (!stats) return null;
 
+    const total = stats.totalFeedbacks || stats.totalFeedback || 0;
+    const avg =
+      // product stats
+      stats.averageOverallRating ||
+      // seller stats
+      stats.overallRating ||
+      // fallbacks
+      stats.avgSellerRating ||
+      stats.avgProductRating ||
+      0;
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -81,65 +93,16 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           {type === "product" ? "Product" : "Seller"} Ratings Overview
         </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">
-              {stats.averageRating?.toFixed(1) || "0.0"}
-            </div>
-            <StarDisplay
-              rating={Math.round(stats.averageRating || 0)}
-              size="lg"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              {stats.totalFeedback} review{stats.totalFeedback !== 1 ? "s" : ""}
-            </p>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-600">
+            {Number(avg).toFixed(1)}
           </div>
-
-          <div className="space-y-2">
-            {[5, 4, 3, 2, 1].map((rating) => (
-              <div key={rating} className="flex items-center space-x-2">
-                <span className="text-sm w-8">{rating}★</span>
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-yellow-400 h-2 rounded-full"
-                    style={{
-                      width: `${stats.ratingDistribution?.[rating] || 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500 w-10">
-                  {Math.round(stats.ratingDistribution?.[rating] || 0)}%
-                </span>
-              </div>
-            ))}
+          <div className="flex justify-center mt-1">
+            <StarDisplay rating={Math.round(avg)} size="lg" />
           </div>
-
-          <div className="space-y-2">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-green-600">
-                {stats.positivePercentage?.toFixed(0) || 0}%
-              </div>
-              <p className="text-sm text-gray-500">Positive Reviews</p>
-            </div>
-            {stats.commonTags && stats.commonTags.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  Common Tags:
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {stats.commonTags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            {total} review{total !== 1 ? "s" : ""}
+          </p>
         </div>
       </motion.div>
     );
@@ -149,7 +112,7 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
     const isExpanded = expandedFeedback.has(item._id);
     const rating = type === "product" ? item.productRating : item.sellerRating;
     const comment =
-      type === "product" ? item.productComment : item.sellerComment;
+      type === "product" ? item.productReview : item.sellerReview;
 
     return (
       <motion.div
@@ -169,11 +132,11 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
               </p>
               <p className="text-sm text-gray-500">
                 <Clock className="w-4 h-4 inline mr-1" />
-                {format.formatDate(item.createdAt)}
+                {formatDate(item.createdAt)}
               </p>
             </div>
           </div>
-          {item.verified && (
+          {item.isVerified && (
             <div className="flex items-center text-green-600">
               <Shield className="w-4 h-4 mr-1" />
               <span className="text-sm">Verified Purchase</span>
@@ -221,7 +184,7 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
         )}
 
         {/* Seller Response */}
-        {item.sellerResponse && (
+        {item.sellerResponse?.response && (
           <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
             <div className="flex items-center space-x-2 mb-2">
               <MessageSquare className="w-4 h-4 text-blue-600" />
@@ -229,18 +192,20 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
                 Seller Response
               </span>
               <span className="text-xs text-blue-600">
-                {format.formatDate(item.sellerResponse.createdAt)}
+                {item.sellerResponse.respondedAt
+                  ? formatDate(item.sellerResponse.respondedAt)
+                  : ""}
               </span>
             </div>
             <p className="text-blue-800 text-sm">
-              {item.sellerResponse.message}
+              {item.sellerResponse.response}
             </p>
           </div>
         )}
 
         {/* Show more details toggle */}
-        {(type === "product" && item.sellerComment) ||
-          (type === "seller" && item.productComment && (
+        {(type === "product" && item.sellerReview) ||
+          (type === "seller" && item.productReview && (
             <button
               onClick={() => toggleExpanded(item._id)}
               className="mt-3 flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm"
@@ -267,20 +232,20 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
             exit={{ opacity: 0, height: 0 }}
             className="mt-4 pt-4 border-t border-gray-200"
           >
-            {type === "product" && item.sellerComment && (
+            {type === "product" && item.sellerReview && (
               <div className="mb-3">
                 <h4 className="text-sm font-medium text-gray-900 mb-1">
                   Seller Rating: <StarDisplay rating={item.sellerRating} />
                 </h4>
-                <p className="text-gray-700 text-sm">{item.sellerComment}</p>
+                <p className="text-gray-700 text-sm">{item.sellerReview}</p>
               </div>
             )}
-            {type === "seller" && item.productComment && (
+            {type === "seller" && item.productReview && (
               <div className="mb-3">
                 <h4 className="text-sm font-medium text-gray-900 mb-1">
                   Product Rating: <StarDisplay rating={item.productRating} />
                 </h4>
-                <p className="text-gray-700 text-sm">{item.productComment}</p>
+                <p className="text-gray-700 text-sm">{item.productReview}</p>
               </div>
             )}
           </motion.div>

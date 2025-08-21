@@ -7,7 +7,10 @@ const {
   updateProduct,
   deleteProduct,
   getVendorProducts,
-  reviewProduct
+  reviewProduct,
+  relistProduct,
+  removeUnsoldProduct,
+  getPriceRecommendation
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -51,5 +54,10 @@ router.put(
 );
 
 router.delete('/:id', authorize('vendor'), deleteProduct);
+
+// Vendor routes for unsold products
+router.get('/:id/price-recommendation', authorize('vendor'), getPriceRecommendation);
+router.post('/:id/relist', authorize('vendor'), relistProduct);
+router.delete('/:id/remove', authorize('vendor'), removeUnsoldProduct);
 
 module.exports = router;

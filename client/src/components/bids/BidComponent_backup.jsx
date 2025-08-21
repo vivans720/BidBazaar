@@ -306,23 +306,8 @@ const BidComponent = ({
 
       {isAuthenticated ? (
         <>
-          {/* Debug information (only in development) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <strong>Debug Info:</strong>
-              <br />
-              Valid bid amounts: {validBidAmounts.length}
-              <br />
-              Starting price: {startingPrice || 'undefined'}
-              <br />
-              Current price: {currentPrice || 'undefined'}
-              <br />
-              Next valid bid: {formatPrice(minimumBid)}
-            </div>
-          )}
-          
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+            <div>
             <label
               htmlFor="bidAmount"
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -411,7 +396,7 @@ const BidComponent = ({
               Bid in increments of{" "}
               {startingPrice ? 
                 formatPrice(Math.ceil(startingPrice * 0.05)) : 
-                "₹100"
+                "₹5"
               }
             </p>
           </div>

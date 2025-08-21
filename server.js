@@ -129,16 +129,31 @@ const updateExpiredAuctions = async () => {
           });
 
           for (const losingBid of losingBids) {
-            const loserWallet = await Wallet.findOne({
+            // Ensure loser wallet exists
+            let loserWallet = await Wallet.findOne({ user: losingBid.bidder });
+            if (!loserWallet) {
+              loserWallet = await Wallet.create({
+                user: losingBid.bidder,
+                balance: 0,
+                currency: "INR",
+              });
+            }
+
+            // Refund exactly what was deducted for this bid (match transaction)
+            const Transaction = require("./models/transactionModel");
+            const bidTxn = await Transaction.findOne({
+              relatedBid: losingBid._id,
+              type: "bid",
               user: losingBid.bidder,
+              status: "completed",
             });
-            if (loserWallet) {
+
+            const refundAmount = bidTxn ? Math.abs(bidTxn.amount) : 0;
+            if (refundAmount > 0) {
               await loserWallet.addFunds(
-                losingBid.amount,
+                refundAmount,
                 "bid_refund",
-                `Bid refund for ended auction: ${
-                  product.title || product.name
-                }`,
+                `Bid refund for ended auction: ${product.title || product.name}`,
                 losingBid._id,
                 product._id
               );
@@ -152,6 +167,47 @@ const updateExpiredAuctions = async () => {
             // Update losing bid status
             losingBid.status = "lost";
             await losingBid.save();
+          }
+
+          // Credit seller (vendor) with sale proceeds equal to winning bid (idempotent)
+          try {
+            const Product = require("./models/productModel");
+            // Atomically set payout flag to prevent duplicates across paths
+            const updated = await Product.findOneAndUpdate(
+              { _id: product._id, sellerPayoutCredited: { $ne: true } },
+              { $set: { sellerPayoutCredited: true } },
+              { new: true }
+            );
+
+            if (updated) {
+              const vendorId = product.vendor;
+              let vendorWallet = await Wallet.findOne({ user: vendorId });
+              if (!vendorWallet) {
+                vendorWallet = await Wallet.create({
+                  user: vendorId,
+                  balance: 0,
+                  currency: "INR",
+                });
+              }
+
+              await vendorWallet.addFunds(
+                highestBid.amount,
+                "sale_proceeds",
+                `Sale proceeds for product: ${product.title || product.name}`,
+                null,
+                product._id
+              );
+
+              // Update vendor cached balance
+              await User.findByIdAndUpdate(vendorId, {
+                walletBalance: vendorWallet.balance,
+              });
+            }
+          } catch (sellerCreditError) {
+            console.error(
+              "Error crediting seller with sale proceeds:",
+              sellerCreditError
+            );
           }
         } catch (walletError) {
           console.error(

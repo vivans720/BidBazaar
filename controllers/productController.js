@@ -131,6 +131,7 @@ exports.getProduct = async (req, res) => {
       const Bid = require("../models/bidModel");
       const Wallet = require("../models/walletModel");
       const User = require("../models/userModel");
+      const Transaction = require("../models/transactionModel");
       const highestBid = await Bid.findOne({ product: product._id })
         .sort({ amount: -1 })
         .populate("bidder", "name email");
@@ -153,7 +154,6 @@ exports.getProduct = async (req, res) => {
           });
           if (winnerWallet) {
             // Check if auction_win transaction already exists for this bid
-            const Transaction = require("../models/transactionModel");
             const existingWinTransaction = await Transaction.findOne({
               relatedBid: highestBid._id,
               type: "auction_win",
@@ -184,16 +184,30 @@ exports.getProduct = async (req, res) => {
           });
 
           for (const losingBid of losingBids) {
-            const loserWallet = await Wallet.findOne({
+            // Ensure loser wallet exists
+            let loserWallet = await Wallet.findOne({ user: losingBid.bidder });
+            if (!loserWallet) {
+              loserWallet = await Wallet.create({
+                user: losingBid.bidder,
+                balance: 0,
+                currency: "INR",
+              });
+            }
+
+            // Determine exact refund from recorded bid transaction
+            const bidTxn = await Transaction.findOne({
+              relatedBid: losingBid._id,
+              type: "bid",
               user: losingBid.bidder,
+              status: "completed",
             });
-            if (loserWallet) {
+
+            const refundAmount = bidTxn ? Math.abs(bidTxn.amount) : 0;
+            if (refundAmount > 0) {
               await loserWallet.addFunds(
-                losingBid.amount,
+                refundAmount,
                 "bid_refund",
-                `Bid refund for ended auction: ${
-                  product.title || product.name
-                }`,
+                `Bid refund for ended auction: ${product.title || product.name}`,
                 losingBid._id,
                 product._id
               );
@@ -207,6 +221,45 @@ exports.getProduct = async (req, res) => {
             // Update losing bid status
             losingBid.status = "lost";
             await losingBid.save();
+          }
+
+          // Credit seller (vendor) with sale proceeds equal to winning bid (idempotent)
+          try {
+            const Product = require("../models/productModel");
+            const updated = await Product.findOneAndUpdate(
+              { _id: product._id, sellerPayoutCredited: { $ne: true } },
+              { $set: { sellerPayoutCredited: true } },
+              { new: true }
+            );
+
+            if (updated) {
+              const vendorId = product.vendor;
+              let vendorWallet = await Wallet.findOne({ user: vendorId });
+              if (!vendorWallet) {
+                vendorWallet = await Wallet.create({
+                  user: vendorId,
+                  balance: 0,
+                  currency: "INR",
+                });
+              }
+
+              await vendorWallet.addFunds(
+                highestBid.amount,
+                "sale_proceeds",
+                `Sale proceeds for product: ${product.title || product.name}`,
+                null,
+                product._id
+              );
+
+              await User.findByIdAndUpdate(vendorId, {
+                walletBalance: vendorWallet.balance,
+              });
+            }
+          } catch (sellerCreditError) {
+            console.error(
+              "Error crediting seller with sale proceeds:",
+              sellerCreditError
+            );
           }
         } catch (walletError) {
           console.error(
@@ -352,6 +405,7 @@ exports.deleteProduct = async (req, res) => {
 exports.getVendorProducts = async (req, res) => {
   try {
     const products = await Product.find({ vendor: req.user.id })
+      .sort({ endTime: -1, createdAt: -1 })
       .populate("winner", "name email")
       .populate("vendor", "name email");
 
@@ -418,6 +472,200 @@ exports.reviewProduct = async (req, res) => {
   }
 };
 
+// @desc    Relist unsold product
+// @route   POST /api/products/:id/relist
+// @access  Private/Vendor
+exports.relistProduct = async (req, res) => {
+  try {
+    const { startingPrice, duration } = req.body;
+    
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
+      });
+    }
+
+    // Check if user is the vendor
+    if (product.vendor.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authorized to relist this product"
+      });
+    }
+
+    // Check if product is eligible for relisting (ended without winner)
+    if (product.status !== "ended" || product.winner) {
+      return res.status(400).json({
+        success: false,
+        error: "Only unsold products can be relisted"
+      });
+    }
+
+    // Calculate recommended price based on previous auction data
+    const Bid = require("../models/bidModel");
+    const previousBids = await Bid.find({ product: product._id }).sort({ amount: -1 });
+    
+    let recommendedPrice = product.startingPrice;
+    if (previousBids.length > 0) {
+      // If there were bids, recommend 10-20% lower than the highest bid
+      const highestBid = previousBids[0].amount;
+      recommendedPrice = Math.max(
+        Math.round(highestBid * 0.8), // 20% lower than highest bid
+        Math.round(product.startingPrice * 0.9) // But not lower than 90% of original price
+      );
+    } else {
+      // If no bids, recommend 10-15% lower than original price
+      recommendedPrice = Math.round(product.startingPrice * 0.85);
+    }
+
+    // Create new product with updated details
+    const newProduct = {
+      title: product.title,
+      description: product.description,
+      category: product.category,
+      startingPrice: startingPrice || recommendedPrice,
+      duration: duration || product.duration,
+      images: product.images,
+      vendor: product.vendor
+    };
+
+    // Calculate new end time
+    const startTime = new Date();
+    const endTime = new Date(startTime.getTime() + newProduct.duration * 60 * 60 * 1000);
+    newProduct.endTime = endTime;
+
+    const relistedProduct = await Product.create(newProduct);
+
+    res.status(201).json({
+      success: true,
+      data: relistedProduct,
+      recommendedPrice,
+      message: "Product relisted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Remove unsold product
+// @route   DELETE /api/products/:id/remove
+// @access  Private/Vendor
+exports.removeUnsoldProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
+      });
+    }
+
+    // Check if user is the vendor
+    if (product.vendor.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authorized to remove this product"
+      });
+    }
+
+    // Check if product is eligible for removal (ended without winner)
+    if (product.status !== "ended" || product.winner) {
+      return res.status(400).json({
+        success: false,
+        error: "Only unsold products can be removed"
+      });
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Product removed successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get price recommendation for relisting
+// @route   GET /api/products/:id/price-recommendation
+// @access  Private/Vendor
+exports.getPriceRecommendation = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
+      });
+    }
+
+    // Check if user is the vendor
+    if (product.vendor.toString() !== req.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authorized to access this product"
+      });
+    }
+
+    // Check if product is eligible for relisting
+    if (product.status !== "ended" || product.winner) {
+      return res.status(400).json({
+        success: false,
+        error: "Only unsold products can be relisted"
+      });
+    }
+
+    // Calculate recommended price based on previous auction data
+    const Bid = require("../models/bidModel");
+    const previousBids = await Bid.find({ product: product._id }).sort({ amount: -1 });
+    
+    let recommendedPrice = product.startingPrice;
+    let recommendationReason = "";
+    
+    if (previousBids.length > 0) {
+      const highestBid = previousBids[0].amount;
+      const averageBid = previousBids.reduce((sum, bid) => sum + bid.amount, 0) / previousBids.length;
+      
+      recommendedPrice = Math.max(
+        Math.round(highestBid * 0.8), // 20% lower than highest bid
+        Math.round(product.startingPrice * 0.9) // But not lower than 90% of original price
+      );
+      
+      recommendationReason = `Based on ${previousBids.length} previous bids. Highest bid was ₹${highestBid}, average was ₹${Math.round(averageBid)}.`;
+    } else {
+      recommendedPrice = Math.round(product.startingPrice * 0.85);
+      recommendationReason = "No bids received. Recommending 15% lower than original price to attract more interest.";
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        originalPrice: product.startingPrice,
+        recommendedPrice,
+        recommendationReason,
+        previousBidsCount: previousBids.length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 // Utility function to check and update expired auctions
 const updateExpiredAuctions = async (productsToCheck) => {
   const now = new Date();
@@ -443,6 +691,123 @@ const updateExpiredAuctions = async (productsToCheck) => {
           // Update the winning bid status to 'won'
           highestBid.status = "won";
           await highestBid.save();
+
+          // Handle wallet transactions: record auction_win, refund losers, credit seller
+          try {
+            const Wallet = require("../models/walletModel");
+            const User = require("../models/userModel");
+            const Transaction = require("../models/transactionModel");
+
+            // Winner finalization transaction (idempotent)
+            const winnerWallet = await Wallet.findOne({
+              user: highestBid.bidder._id,
+            });
+            if (winnerWallet) {
+              const existingWinTransaction = await Transaction.findOne({
+                relatedBid: highestBid._id,
+                type: "auction_win",
+              });
+              if (!existingWinTransaction) {
+                await Transaction.create({
+                  wallet: winnerWallet._id,
+                  user: highestBid.bidder._id,
+                  type: "auction_win",
+                  amount: 0,
+                  balanceAfter: winnerWallet.balance,
+                  description: `Won auction for product: ${
+                    product.title || product.name
+                  }`,
+                  status: "completed",
+                  relatedProduct: product._id,
+                  relatedBid: highestBid._id,
+                });
+              }
+            }
+
+            // Refund all losing bidders
+            const losingBids = await Bid.find({
+              product: product._id,
+              bidder: { $ne: highestBid.bidder._id },
+            });
+
+            for (const losingBid of losingBids) {
+              let loserWallet = await Wallet.findOne({ user: losingBid.bidder });
+              if (!loserWallet) {
+                loserWallet = await Wallet.create({
+                  user: losingBid.bidder,
+                  balance: 0,
+                  currency: "INR",
+                });
+              }
+
+              const bidTxn = await Transaction.findOne({
+                relatedBid: losingBid._id,
+                type: "bid",
+                user: losingBid.bidder,
+                status: "completed",
+              });
+              const refundAmount = bidTxn ? Math.abs(bidTxn.amount) : 0;
+              if (refundAmount > 0) {
+                await loserWallet.addFunds(
+                  refundAmount,
+                  "bid_refund",
+                  `Bid refund for ended auction: ${
+                    product.title || product.name
+                  }`,
+                  losingBid._id,
+                  product._id
+                );
+
+                await User.findByIdAndUpdate(losingBid.bidder, {
+                  walletBalance: loserWallet.balance,
+                });
+              }
+
+              losingBid.status = "lost";
+              await losingBid.save();
+            }
+
+            // Credit seller proceeds (idempotent via product flag)
+            try {
+              const Product = require("../models/productModel");
+              const updated = await Product.findOneAndUpdate(
+                { _id: product._id, sellerPayoutCredited: { $ne: true } },
+                { $set: { sellerPayoutCredited: true } },
+                { new: true }
+              );
+              if (updated) {
+                const vendorId = product.vendor;
+                let vendorWallet = await Wallet.findOne({ user: vendorId });
+                if (!vendorWallet) {
+                  vendorWallet = await Wallet.create({
+                    user: vendorId,
+                    balance: 0,
+                    currency: "INR",
+                  });
+                }
+                await vendorWallet.addFunds(
+                  highestBid.amount,
+                  "sale_proceeds",
+                  `Sale proceeds for product: ${product.title || product.name}`,
+                  null,
+                  product._id
+                );
+                await User.findByIdAndUpdate(vendorId, {
+                  walletBalance: vendorWallet.balance,
+                });
+              }
+            } catch (sellerCreditError) {
+              console.error(
+                "Error crediting seller with sale proceeds:",
+                sellerCreditError
+              );
+            }
+          } catch (walletError) {
+            console.error(
+              "Error handling wallet transactions for auction end:",
+              walletError
+            );
+          }
 
           // Update all other bids for this product to 'lost'
           await Bid.updateMany(
@@ -486,6 +851,119 @@ const updateExpiredAuctions = async (productsToCheck) => {
       highestBid.status = "won";
       await highestBid.save();
 
+      // Handle wallet transactions: record auction_win, refund losers, credit seller
+      try {
+        const Wallet = require("../models/walletModel");
+        const User = require("../models/userModel");
+        const Transaction = require("../models/transactionModel");
+
+        const winnerWallet = await Wallet.findOne({
+          user: highestBid.bidder._id,
+        });
+        if (winnerWallet) {
+          const existingWinTransaction = await Transaction.findOne({
+            relatedBid: highestBid._id,
+            type: "auction_win",
+          });
+          if (!existingWinTransaction) {
+            await Transaction.create({
+              wallet: winnerWallet._id,
+              user: highestBid.bidder._id,
+              type: "auction_win",
+              amount: 0,
+              balanceAfter: winnerWallet.balance,
+              description: `Won auction for product: ${
+                product.title || product.name
+              }`,
+              status: "completed",
+              relatedProduct: product._id,
+              relatedBid: highestBid._id,
+            });
+          }
+        }
+
+        const losingBids = await Bid.find({
+          product: product._id,
+          bidder: { $ne: highestBid.bidder._id },
+        });
+
+        for (const losingBid of losingBids) {
+          let loserWallet = await Wallet.findOne({ user: losingBid.bidder });
+          if (!loserWallet) {
+            loserWallet = await Wallet.create({
+              user: losingBid.bidder,
+              balance: 0,
+              currency: "INR",
+            });
+          }
+
+          const bidTxn = await Transaction.findOne({
+            relatedBid: losingBid._id,
+            type: "bid",
+            user: losingBid.bidder,
+            status: "completed",
+          });
+          const refundAmount = bidTxn ? Math.abs(bidTxn.amount) : 0;
+          if (refundAmount > 0) {
+            await loserWallet.addFunds(
+              refundAmount,
+              "bid_refund",
+              `Bid refund for ended auction: ${product.title || product.name}`,
+              losingBid._id,
+              product._id
+            );
+
+            await User.findByIdAndUpdate(losingBid.bidder, {
+              walletBalance: loserWallet.balance,
+            });
+          }
+
+          losingBid.status = "lost";
+          await losingBid.save();
+        }
+
+        // Credit seller proceeds (idempotent via product flag)
+        try {
+          const Product = require("../models/productModel");
+          const updated = await Product.findOneAndUpdate(
+            { _id: product._id, sellerPayoutCredited: { $ne: true } },
+            { $set: { sellerPayoutCredited: true } },
+            { new: true }
+          );
+          if (updated) {
+            const vendorId = product.vendor;
+            let vendorWallet = await Wallet.findOne({ user: vendorId });
+            if (!vendorWallet) {
+              vendorWallet = await Wallet.create({
+                user: vendorId,
+                balance: 0,
+                currency: "INR",
+              });
+            }
+            await vendorWallet.addFunds(
+              highestBid.amount,
+              "sale_proceeds",
+              `Sale proceeds for product: ${product.title || product.name}`,
+              null,
+              product._id
+            );
+            await User.findByIdAndUpdate(vendorId, {
+              walletBalance: vendorWallet.balance,
+            });
+          }
+        } catch (sellerCreditError) {
+          console.error(
+            "Error crediting seller with sale proceeds:",
+            sellerCreditError
+          );
+        }
+      } catch (walletError) {
+        console.error(
+          "Error handling wallet transactions for auction end:",
+          walletError
+        );
+      }
+
       // Update all other bids for this product to 'lost'
       await Bid.updateMany(
         { product: product._id, _id: { $ne: highestBid._id } },
@@ -510,4 +988,7 @@ module.exports = {
   deleteProduct: exports.deleteProduct,
   getVendorProducts: exports.getVendorProducts,
   reviewProduct: exports.reviewProduct,
+  relistProduct: exports.relistProduct,
+  removeUnsoldProduct: exports.removeUnsoldProduct,
+  getPriceRecommendation: exports.getPriceRecommendation,
 };

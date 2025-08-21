@@ -13,10 +13,11 @@ const ScrollToTopButton = () => {
       setIsVisible(e.scroll > 300);
     };
 
-    lenis.on("scroll", handleScroll);
+    // Guard in case of multiple mounts
+    lenis.on && lenis.on("scroll", handleScroll);
 
     return () => {
-      lenis.off("scroll", handleScroll);
+      lenis.off && lenis.off("scroll", handleScroll);
     };
   }, [lenis]);
 

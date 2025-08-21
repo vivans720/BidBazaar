@@ -340,6 +340,16 @@ const ProductDetailPage = () => {
                   <FeedbackDisplay productId={product._id} type="product" />
                 </div>
               )}
+
+              {/* Seller Feedback */}
+              {product?.vendor?._id && (
+                <div className="bg-white rounded-xl shadow-md overflow-hidden mt-6 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">
+                    Seller Reviews
+                  </h2>
+                  <FeedbackDisplay sellerId={product.vendor._id} type="seller" />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -104,7 +104,7 @@ const FAQPage = () => {
         id: "minimum-bid",
         question: "What is the minimum bid increment?",
         answer:
-          "The minimum bid increment is automatically calculated based on the current bid amount. For items under ₹1,000, the increment is ₹50. For higher-value items, increments increase proportionally to ensure meaningful bidding competition.",
+          "The minimum bid increment is automatically calculated as 5% of the starting price. For example, for an item with a starting price of ₹100, the increment would be ₹5. This ensures proportional bidding competition based on the item's value.",
       },
       {
         id: "bid-retraction",

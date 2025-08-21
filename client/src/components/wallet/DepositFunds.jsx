@@ -28,6 +28,11 @@ const DepositFunds = ({ onSuccess, wallet }) => {
   const handleDeposit = async (e) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (loading) {
+      return;
+    }
+
     const depositAmount = parseFloat(amount);
 
     if (!depositAmount || depositAmount <= 0) {

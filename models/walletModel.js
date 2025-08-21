@@ -64,6 +64,43 @@ walletSchema.methods.addFunds = async function (
     }
   }
 
+  // Prevent duplicate sale_proceeds for same product and user
+  if (transactionType === "sale_proceeds" && relatedProduct) {
+    const Transaction = require("./transactionModel");
+    const existingProceeds = await Transaction.findOne({
+      user: this.user,
+      relatedProduct: relatedProduct,
+      type: "sale_proceeds",
+      status: "completed",
+    });
+    if (existingProceeds) {
+      console.log(
+        `Sale proceeds already credited for user ${this.user} on product ${relatedProduct}`
+      );
+      return this;
+    }
+  }
+
+  // Additional check for deposit duplicates (within last minute)
+  if (transactionType === "deposit") {
+    const Transaction = require("./transactionModel");
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const recentSimilarDeposit = await Transaction.findOne({
+      user: this.user,
+      type: "deposit",
+      amount: amount,
+      createdAt: { $gte: oneMinuteAgo },
+      status: "completed",
+    });
+
+    if (recentSimilarDeposit) {
+      console.log(
+        `Recent similar deposit found for user ${this.user}, skipping duplicate`
+      );
+      return this; // Return without creating duplicate
+    }
+  }
+
   this.balance += amount;
   this.lastTransaction = new Date();
 
@@ -115,6 +152,27 @@ walletSchema.methods.deductFunds = async function (
     if (existingTransaction) {
       console.log(
         `Transaction already exists for bid ${relatedBid} with type ${transactionType}`
+      );
+      return this; // Return without creating duplicate
+    }
+  }
+
+  // Additional check for recent bid transactions with same amount (within last minute)
+  if (transactionType === "bid" && relatedProduct) {
+    const Transaction = require("./transactionModel");
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const recentSimilarBid = await Transaction.findOne({
+      user: this.user,
+      type: "bid",
+      amount: amount,
+      relatedProduct: relatedProduct,
+      createdAt: { $gte: oneMinuteAgo },
+      status: "completed",
+    });
+
+    if (recentSimilarBid) {
+      console.log(
+        `Recent similar bid transaction found for user ${this.user}, skipping duplicate`
       );
       return this; // Return without creating duplicate
     }

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Star, Send, AlertCircle } from "lucide-react";
 import api from "../../utils/api";
 
-const FeedbackForm = ({ product, onSubmit }) => {
+const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
   const [formData, setFormData] = useState({
     productRating: 0,
     sellerRating: 0,
@@ -64,10 +64,21 @@ const FeedbackForm = ({ product, onSubmit }) => {
     setError("");
 
     try {
-      await api.post(`/feedback/product/${product._id}/submit`, formData);
+      await api.post(`/feedback`, {
+        productId: product._id,
+        winningBidId,
+        productRating: formData.productRating,
+        productReview: formData.productComment,
+        sellerRating: formData.sellerRating,
+        sellerReview: formData.sellerComment,
+        experienceTags: formData.experienceTags,
+        issues: formData.issues,
+      });
       onSubmit?.();
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to submit feedback");
+      setError(
+        error.response?.data?.error || error.response?.data?.message || "Failed to submit feedback"
+      );
     } finally {
       setLoading(false);
     }

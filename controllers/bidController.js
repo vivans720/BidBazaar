@@ -117,6 +117,18 @@ const placeBid = asyncHandler(async (req, res) => {
 
   // Start transaction-like operations
   try {
+    // Check for existing bid with same amount to prevent duplicates
+    const existingBidWithSameAmount = await Bid.findOne({
+      product: productId,
+      bidder: req.user._id,
+      amount: amount,
+    });
+
+    if (existingBidWithSameAmount) {
+      res.status(400);
+      throw new Error("You have already placed this exact bid amount");
+    }
+
     // Create bid first to get the bid ID
     const bid = await Bid.create({
       product: productId,

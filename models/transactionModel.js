@@ -22,6 +22,7 @@ const transactionSchema = new mongoose.Schema(
         "bid_refund", // Money refunded when outbid
         "auction_win", // Final payment when winning auction
         "auction_refund", // Refund when auction is cancelled
+        "sale_proceeds", // Payout to seller when auction completes
         "admin_adjustment", // Admin manual adjustment
       ],
     },
@@ -83,6 +84,7 @@ transactionSchema.index({ user: 1, createdAt: -1 });
 transactionSchema.index({ wallet: 1, createdAt: -1 });
 transactionSchema.index({ type: 1, status: 1 });
 transactionSchema.index({ transactionId: 1 });
+
 // Compound index to prevent duplicate bid/bid_refund transactions for the same bid
 transactionSchema.index(
   { relatedBid: 1, type: 1 },
@@ -91,6 +93,29 @@ transactionSchema.index(
     partialFilterExpression: {
       relatedBid: { $exists: true },
       type: { $in: ["bid", "bid_refund", "auction_win"] },
+    },
+  }
+);
+
+// Index to help prevent duplicate sale proceeds per product per seller
+transactionSchema.index(
+  { user: 1, relatedProduct: 1, type: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      relatedProduct: { $exists: true },
+      type: "sale_proceeds",
+    },
+  }
+);
+
+// Index to prevent duplicate deposits within short time frames
+transactionSchema.index(
+  { user: 1, type: 1, amount: 1, createdAt: 1 },
+  {
+    partialFilterExpression: {
+      type: "deposit",
+      status: "completed",
     },
   }
 );

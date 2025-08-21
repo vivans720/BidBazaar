@@ -85,7 +85,7 @@ const BidComponent = ({
         "BidComponent - Using fallback calculation with currentPrice:",
         validCurrentPrice
       );
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50); // Minimum increment of 50
+      const increment = Math.ceil(validCurrentPrice * 0.05); // 5% increment without minimum
       const amounts = [];
       let value = validCurrentPrice;
 
@@ -141,10 +141,10 @@ const BidComponent = ({
 
     // Fallback calculation if validBidAmounts is empty
     if (!nextValidAmount && validStartingPrice) {
-      const increment = Math.max(Math.ceil(validStartingPrice * 0.05), 50);
+      const increment = Math.ceil(validStartingPrice * 0.05);
       return Math.max(validCurrentPrice, validStartingPrice) + increment;
     } else if (!nextValidAmount && validCurrentPrice) {
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50);
+      const increment = Math.ceil(validCurrentPrice * 0.05);
       return validCurrentPrice + increment;
     }
 
@@ -308,23 +308,6 @@ const BidComponent = ({
 
       {isAuthenticated ? (
         <>
-          {/* Debug information (only in development) */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <strong>Debug Info:</strong>
-              <br />
-              Valid bid amounts: {validBidAmounts.length}
-              <br />
-              Starting price: {startingPrice || "undefined"}
-              <br />
-              Current price: {currentPrice || "undefined"}
-              <br />
-              Next valid bid: {formatPrice(minimumBid)}
-              <br />
-              Use manual input: {useManualInput ? "Yes" : "No"}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
@@ -411,8 +394,8 @@ const BidComponent = ({
               <p className="mt-1 text-xs text-gray-500">
                 Bid in increments of{" "}
                 {startingPrice
-                  ? formatPrice(Math.max(Math.ceil(startingPrice * 0.05), 50))
-                  : "₹50"}
+                  ? formatPrice(Math.ceil(startingPrice * 0.05))
+                  : "₹5"}
               </p>
             </div>
 

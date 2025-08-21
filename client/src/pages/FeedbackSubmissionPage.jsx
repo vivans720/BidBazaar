@@ -68,9 +68,10 @@ const FeedbackSubmissionPage = () => {
   const fetchProductAndBid = async () => {
     try {
       setLoading(true);
-      const [productResponse, bidResponse] = await Promise.all([
+      const [productResponse, bidResponse, pendingResponse] = await Promise.all([
         api.get(`/products/${productId}`),
         bidId ? api.get(`/bids/${bidId}`) : Promise.resolve(null),
+        api.get(`/feedback/my/pending`),
       ]);
 
       setProduct(productResponse.data.data);
@@ -78,15 +79,18 @@ const FeedbackSubmissionPage = () => {
         setBid(bidResponse.data.data);
       }
 
-      // Check if feedback already exists
-      try {
-        await api.get(`/feedback/product/${productId}`);
-        // If we get here, feedback exists
-        toast.info("You have already submitted feedback for this auction");
+      // Verify user is eligible (won and pending feedback for this product)
+      const pendingList = pendingResponse?.data?.data || [];
+      const isPending = pendingList.some(
+        (entry) => entry?.product?._id === productId
+      );
+
+      if (!isPending) {
+        toast.info(
+          "No pending feedback for this auction. You may have already submitted or are not the winner."
+        );
         navigate("/dashboard");
         return;
-      } catch (err) {
-        // No feedback exists, continue
       }
     } catch (error) {
       console.error("Error fetching data:", error);

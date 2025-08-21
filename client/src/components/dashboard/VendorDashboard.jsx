@@ -4,6 +4,7 @@ import api from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";
 import ProductDetail from "../products/ProductDetail";
 import SellerFeedbackDashboard from "../feedback/SellerFeedbackDashboard";
+import RelistModal from "../products/RelistModal";
 import { toast } from "react-toastify";
 
 const VendorDashboard = () => {
@@ -14,6 +15,8 @@ const VendorDashboard = () => {
   const [error, setError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [relistModalOpen, setRelistModalOpen] = useState(false);
+  const [selectedProductForRelist, setSelectedProductForRelist] = useState(null);
 
   useEffect(() => {
     fetchVendorProducts();
@@ -90,15 +93,28 @@ const VendorDashboard = () => {
   );
 
   // Filter products based on the active tab
+  // Sort by latest endTime (or createdAt) descending
+  const sortedProducts = [...products].sort((a, b) => {
+    const aTime = new Date(a.endTime || a.createdAt).getTime();
+    const bTime = new Date(b.endTime || b.createdAt).getTime();
+    return bTime - aTime;
+  });
+
   const filteredProducts =
     activeTab === "overview" || activeTab === "feedback"
-      ? products
+      ? sortedProducts
       : activeTab === "active"
-      ? activeProducts
+      ? [...activeProducts].sort((a, b) =>
+          new Date(b.endTime || b.createdAt) - new Date(a.endTime || a.createdAt)
+        )
       : activeTab === "pending"
-      ? pendingProducts
+      ? [...pendingProducts].sort((a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+        )
       : activeTab === "completed"
-      ? completedSales
+      ? [...completedSales].sort((a, b) =>
+          new Date(b.endTime || b.createdAt) - new Date(a.endTime || a.createdAt)
+        )
       : expiredAuctions;
 
   // Calculate total earnings from completed sales
@@ -106,6 +122,30 @@ const VendorDashboard = () => {
     (total, product) => total + product.currentPrice,
     0
   );
+
+  const handleRelist = (product) => {
+    setSelectedProductForRelist(product);
+    setRelistModalOpen(true);
+  };
+
+  const handleRemove = async (product) => {
+    if (!window.confirm(`Are you sure you want to remove "${product.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/products/${product._id}/remove`);
+      toast.success('Product removed successfully');
+      fetchVendorProducts(); // Refresh the list
+    } catch (error) {
+      console.error('Error removing product:', error);
+      toast.error(error.response?.data?.error || 'Failed to remove product');
+    }
+  };
+
+  const handleRelistSuccess = (relistedProduct) => {
+    fetchVendorProducts(); // Refresh the list
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -365,6 +405,30 @@ const VendorDashboard = () => {
               <SellerFeedbackDashboard sellerId={user?.id} />
             ) : (
               <>
+                {/* Helpful message for unsold products */}
+                {activeTab === "overview" && expiredAuctions.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-yellow-800">
+                          You have {expiredAuctions.length} unsold product{expiredAuctions.length > 1 ? 's' : ''}
+                        </h3>
+                        <div className="mt-2 text-sm text-yellow-700">
+                          <p>
+                            Consider relisting with a lower starting price to attract more bidders. 
+                            Our system will provide price recommendations based on previous auction data.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Product Listings */}
                 {filteredProducts.length === 0 ? (
                   <div className="bg-gray-50 rounded-lg p-8 text-center">
@@ -471,17 +535,22 @@ const VendorDashboard = () => {
                                       product.winner
                                     ? "bg-blue-100 text-blue-800"
                                     : product.status === "ended"
-                                    ? "bg-gray-100 text-gray-800"
+                                    ? "bg-red-100 text-red-800"
                                     : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {product.status === "ended" && product.winner
                                   ? "Sold"
                                   : product.status === "ended"
-                                  ? "Expired"
+                                  ? "Unsold"
                                   : product.status.charAt(0).toUpperCase() +
                                     product.status.slice(1)}
                               </span>
+                              {product.status === "ended" && !product.winner && (
+                                <div className="text-xs text-red-600 mt-1">
+                                  No bids received
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">
@@ -538,6 +607,21 @@ const VendorDashboard = () => {
                                 >
                                   Edit
                                 </Link>
+                              ) : product.status === "ended" && !product.winner ? (
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleRelist(product)}
+                                    className="text-green-600 hover:text-green-900"
+                                  >
+                                    Relist
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemove(product)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
                               ) : null}
                             </td>
                           </tr>
@@ -551,6 +635,17 @@ const VendorDashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* Relist Modal */}
+      <RelistModal
+        product={selectedProductForRelist}
+        isOpen={relistModalOpen}
+        onClose={() => {
+          setRelistModalOpen(false);
+          setSelectedProductForRelist(null);
+        }}
+        onRelistSuccess={handleRelistSuccess}
+      />
     </div>
   );
 };

@@ -64,6 +64,11 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: 'User'
     },
+    // Idempotency guard to avoid duplicate seller payouts
+    sellerPayoutCredited: {
+      type: Boolean,
+      default: false
+    },
     adminRemarks: {
       type: String,
       maxlength: [500, 'Admin remarks cannot exceed 500 characters']

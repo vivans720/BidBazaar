@@ -48,14 +48,17 @@ const BidComponent = ({
 
   // Calculate valid bid amounts based on 5% increments from starting price
   useEffect(() => {
-    console.log("BidComponent - Calculating valid bid amounts:", {
-      startingPrice,
-      currentPrice,
-      hasStartingPrice: !!startingPrice,
-      hasCurrentPrice: !!currentPrice,
-      startingPriceType: typeof startingPrice,
-      currentPriceType: typeof currentPrice,
-    });
+    // Only log in development mode
+    if (process.env.NODE_ENV === "development") {
+      console.log("BidComponent - Calculating valid bid amounts:", {
+        startingPrice,
+        currentPrice,
+        hasStartingPrice: !!startingPrice,
+        hasCurrentPrice: !!currentPrice,
+        startingPriceType: typeof startingPrice,
+        currentPriceType: typeof currentPrice,
+      });
+    }
 
     // Ensure we have valid numeric values
     const validStartingPrice =
@@ -74,18 +77,22 @@ const BidComponent = ({
         amounts.push(Math.round(value)); // Ensure whole numbers
       }
 
-      console.log(
-        "BidComponent - Generated valid amounts:",
-        amounts.slice(0, 5)
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "BidComponent - Generated valid amounts:",
+          amounts.slice(0, 5)
+        );
+      }
       setValidBidAmounts(amounts);
       setUseManualInput(false);
     } else if (validCurrentPrice && validCurrentPrice > 0) {
-      console.warn(
-        "BidComponent - Using fallback calculation with currentPrice:",
-        validCurrentPrice
-      );
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50); // Minimum increment of 50
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "BidComponent - Using fallback calculation with currentPrice:",
+          validCurrentPrice
+        );
+      }
+      const increment = Math.ceil(validCurrentPrice * 0.05); // 5% increment without minimum
       const amounts = [];
       let value = validCurrentPrice;
 
@@ -94,10 +101,12 @@ const BidComponent = ({
         amounts.push(Math.round(value));
       }
 
-      console.log(
-        "BidComponent - Fallback amounts generated:",
-        amounts.slice(0, 5)
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "BidComponent - Fallback amounts generated:",
+          amounts.slice(0, 5)
+        );
+      }
       setValidBidAmounts(amounts);
       setUseManualInput(false);
     } else {
@@ -141,10 +150,10 @@ const BidComponent = ({
 
     // Fallback calculation if validBidAmounts is empty
     if (!nextValidAmount && validStartingPrice) {
-      const increment = Math.max(Math.ceil(validStartingPrice * 0.05), 50);
+      const increment = Math.ceil(validStartingPrice * 0.05);
       return Math.max(validCurrentPrice, validStartingPrice) + increment;
     } else if (!nextValidAmount && validCurrentPrice) {
-      const increment = Math.max(Math.ceil(validCurrentPrice * 0.05), 50);
+      const increment = Math.ceil(validCurrentPrice * 0.05);
       return validCurrentPrice + increment;
     }
 
@@ -155,6 +164,11 @@ const BidComponent = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorDetails(null);
+
+    // Prevent double submission
+    if (isLoading) {
+      return;
+    }
 
     if (!isAuthenticated) {
       const errorMsg = "Please log in to place a bid";
@@ -308,23 +322,6 @@ const BidComponent = ({
 
       {isAuthenticated ? (
         <>
-          {/* Debug information (only in development) */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <strong>Debug Info:</strong>
-              <br />
-              Valid bid amounts: {validBidAmounts.length}
-              <br />
-              Starting price: {startingPrice || "undefined"}
-              <br />
-              Current price: {currentPrice || "undefined"}
-              <br />
-              Next valid bid: {formatPrice(minimumBid)}
-              <br />
-              Use manual input: {useManualInput ? "Yes" : "No"}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
@@ -411,8 +408,8 @@ const BidComponent = ({
               <p className="mt-1 text-xs text-gray-500">
                 Bid in increments of{" "}
                 {startingPrice
-                  ? formatPrice(Math.max(Math.ceil(startingPrice * 0.05), 50))
-                  : "₹50"}
+                  ? formatPrice(Math.ceil(startingPrice * 0.05))
+                  : "₹5"}
               </p>
             </div>
 

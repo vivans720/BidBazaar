@@ -72,6 +72,25 @@ const depositFunds = asyncHandler(async (req, res) => {
       });
     }
 
+    // Check for recent duplicate deposits (within last 5 minutes)
+    const Transaction = require("../models/transactionModel");
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentSimilarDeposit = await Transaction.findOne({
+      user: req.user._id,
+      type: "deposit",
+      amount: amount,
+      createdAt: { $gte: fiveMinutesAgo },
+      status: "completed",
+    });
+
+    if (recentSimilarDeposit) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Duplicate deposit detected. Please wait a few minutes before making another deposit with the same amount.",
+      });
+    }
+
     // Add funds to wallet
     const finalDescription =
       description || `Deposit of ₹${amount} via ${paymentMethod}`;
