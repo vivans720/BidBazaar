@@ -25,15 +25,25 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
   const fetchSellerFeedback = async () => {
     try {
       setLoading(true);
+      console.log("Fetching feedback for seller:", sellerId);
+      
       const [statsResponse, feedbackResponse] = await Promise.all([
         api.get(`/feedback/seller/${sellerId}?limit=1`), // Just get stats
         api.get(`/feedback/seller/${sellerId}?limit=5`), // Get recent feedback
       ]);
 
+      console.log("Stats response:", statsResponse.data);
+      console.log("Feedback response:", feedbackResponse.data);
+
       setFeedbackStats(statsResponse.data.data.stats);
       setRecentFeedback(feedbackResponse.data.data.feedback);
     } catch (error) {
       console.error("Error fetching seller feedback:", error);
+      console.error("Error details:", error.response?.data || error.message);
+      
+      // Set empty state on error to prevent infinite loading
+      setFeedbackStats({});
+      setRecentFeedback([]);
     } finally {
       setLoading(false);
     }
@@ -79,15 +89,18 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
     );
   }
 
-  if (!feedbackStats || feedbackStats.totalFeedbacks === 0) {
+  if (!feedbackStats || !feedbackStats.totalFeedbacks || feedbackStats.totalFeedbacks === 0) {
     return (
       <div className="bg-gray-50 rounded-lg p-6 text-center">
         <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          No Feedback Yet
+          No Customer Feedback
         </h3>
-        <p className="text-gray-600">
-          Complete your first sale to start receiving customer feedback.
+        <p className="text-gray-600 mb-2">
+          You haven't received any customer feedback yet.
+        </p>
+        <p className="text-sm text-gray-500">
+          Complete your first sale to start receiving customer feedback and build your seller reputation.
         </p>
       </div>
     );

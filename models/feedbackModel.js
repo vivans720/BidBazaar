@@ -228,7 +228,7 @@ feedbackSchema.statics.getSellerStats = async function (sellerId) {
   const stats = await this.aggregate([
     {
       $match: {
-        seller: mongoose.Types.ObjectId(sellerId),
+        seller: new mongoose.Types.ObjectId(sellerId),
         status: "active",
       },
     },
@@ -277,7 +277,7 @@ feedbackSchema.statics.getProductStats = async function (productId) {
   const stats = await this.aggregate([
     {
       $match: {
-        product: mongoose.Types.ObjectId(productId),
+        product: new mongoose.Types.ObjectId(productId),
         status: "active",
       },
     },

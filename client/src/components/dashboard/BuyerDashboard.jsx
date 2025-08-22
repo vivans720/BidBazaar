@@ -177,65 +177,49 @@ const BuyerDashboard = () => {
           <PendingFeedback />
         </div>
 
+        {/* Quick Actions Section */}
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-medium text-gray-900">Your Bids</h4>
-            <Link
-              to="/bids"
-              className="text-sm font-medium text-primary-600 hover:text-primary-500"
-            >
-              View all bids
+            <h4 className="text-lg font-medium text-gray-900">Quick Actions</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to="/auctions" className="bg-blue-50 p-6 rounded-lg hover:bg-blue-100 transition-colors">
+              <div className="flex items-center">
+                <svg className="h-8 w-8 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <div>
+                  <h5 className="font-medium text-blue-900">View Auctions</h5>
+                  <p className="text-sm text-blue-700">Browse active & expired auctions</p>
+                </div>
+              </div>
+            </Link>
+            
+            <Link to="/bids" className="bg-green-50 p-6 rounded-lg hover:bg-green-100 transition-colors">
+              <div className="flex items-center">
+                <svg className="h-8 w-8 text-green-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <div>
+                  <h5 className="font-medium text-green-900">Your Bids</h5>
+                  <p className="text-sm text-green-700">Track all your bidding activity</p>
+                </div>
+              </div>
+            </Link>
+            
+            <Link to="/products" className="bg-purple-50 p-6 rounded-lg hover:bg-purple-100 transition-colors">
+              <div className="flex items-center">
+                <svg className="h-8 w-8 text-purple-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <div>
+                  <h5 className="font-medium text-purple-900">Browse Products</h5>
+                  <p className="text-sm text-purple-700">Discover new items to bid on</p>
+                </div>
+              </div>
             </Link>
           </div>
-
-          {loading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="animate-pulse bg-gray-100 p-4 rounded-lg"
-                >
-                  <div className="flex justify-between">
-                    <div className="w-1/2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                    <div className="w-1/4">
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : bidStats.totalBids === 0 ? (
-            <div className="bg-gray-50 p-6 rounded-lg text-center">
-              <p className="text-gray-500">You haven't placed any bids yet</p>
-              <Link to="/products">
-                <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  Browse Auctions
-                </button>
-              </Link>
-            </div>
-          ) : (
-            <div className="bg-gray-50 p-6 rounded-lg text-center">
-              <p className="text-gray-700">
-                You have {bidStats.activeBids} active bids and have won{" "}
-                {bidStats.wonAuctions} auctions.
-              </p>
-              <div className="mt-4 flex justify-center space-x-4">
-                <Link to="/bids">
-                  <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    View Your Bids
-                  </button>
-                </Link>
-                <Link to="/products">
-                  <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    Browse More Auctions
-                  </button>
-                </Link>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

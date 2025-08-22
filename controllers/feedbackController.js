@@ -203,6 +203,8 @@ const getProductFeedback = asyncHandler(async (req, res) => {
 // @access  Public
 const getSellerFeedback = asyncHandler(async (req, res) => {
   try {
+    console.log("Getting feedback for seller:", req.params.sellerId);
+    
     const {
       page = 1,
       limit = 10,
@@ -214,6 +216,16 @@ const getSellerFeedback = asyncHandler(async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
 
+    // First, let's check if any feedback exists for this seller
+    const allFeedback = await Feedback.find({ seller: req.params.sellerId });
+    console.log(`Found ${allFeedback.length} total feedback entries for seller`);
+    console.log("All feedback:", allFeedback.map(f => ({ 
+      id: f._id, 
+      status: f.status, 
+      productRating: f.productRating, 
+      sellerRating: f.sellerRating 
+    })));
+
     const feedback = await Feedback.find({
       seller: req.params.sellerId,
       status: "active",
@@ -224,6 +236,8 @@ const getSellerFeedback = asyncHandler(async (req, res) => {
       .limit(parseInt(limit))
       .skip(skip);
 
+    console.log(`Found ${feedback.length} active feedback entries for seller`);
+
     const total = await Feedback.countDocuments({
       seller: req.params.sellerId,
       status: "active",
@@ -231,6 +245,7 @@ const getSellerFeedback = asyncHandler(async (req, res) => {
 
     // Get seller statistics
     const stats = await Feedback.getSellerStats(req.params.sellerId);
+    console.log("Seller stats:", stats);
 
     res.status(200).json({
       success: true,
@@ -247,6 +262,7 @@ const getSellerFeedback = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error in getSellerFeedback:", error);
     res.status(500).json({
       success: false,
       error: error.message,

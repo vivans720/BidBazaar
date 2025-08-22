@@ -402,7 +402,7 @@ const VendorDashboard = () => {
           {/* Content based on active tab */}
           <div className="mt-6">
             {activeTab === "feedback" ? (
-              <SellerFeedbackDashboard sellerId={user?.id} />
+              <SellerFeedbackDashboard sellerId={user?._id} />
             ) : (
               <>
                 {/* Helpful message for unsold products */}

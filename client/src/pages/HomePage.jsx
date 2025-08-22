@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 import { getBidStats } from "../utils/api";
 import { formatCurrency } from "../utils/format";
 
 const HomePage = () => {
+  const { state } = useAuth();
+  const { isAuthenticated, loading: authLoading } = state;
+  
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeAuctions: 0,
@@ -16,6 +20,20 @@ const HomePage = () => {
     averageBid: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  // Show loading spinner while auth is being determined
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
+  // Redirect authenticated users to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   useEffect(() => {
     const fetchStats = async () => {

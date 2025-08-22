@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 const initialState = {
   token: localStorage.getItem("token"),
   isAuthenticated: false,
-  loading: false,
+  loading: true, // Start with loading true to prevent flash
   user: null,
   error: null,
 };
@@ -284,6 +284,9 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       loadUser();
+    } else {
+      // No token, set loading to false
+      dispatch({ type: "AUTH_ERROR" });
     }
   }, []);
 
