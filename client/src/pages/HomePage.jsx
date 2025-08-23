@@ -16,8 +16,13 @@ const HomePage = () => {
     activeBids: 0,
     wonBids: 0,
     todayBids: 0,
+    thisWeekBids: 0,
+    successfulAuctions: 0,
+    totalUsers: 0,
+    totalVendors: 0,
     highestBid: 0,
     averageBid: 0,
+    successRate: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -33,27 +38,37 @@ const HomePage = () => {
           ]);
 
           setStats({
-            totalProducts: productsResponse.data.total || 0,
-            activeAuctions: productsResponse.data.active || 0,
+            totalProducts: productsResponse.data.data.total || 0,
+            activeAuctions: productsResponse.data.data.active || 0,
+            successfulAuctions: productsResponse.data.data.successful || 0,
+            totalUsers: productsResponse.data.data.users?.total || 0,
+            totalVendors: productsResponse.data.data.users?.vendors || 0,
             totalBids: bidsResponse.data.total || 0,
             activeBids: bidsResponse.data.activeBids || 0,
             wonBids: bidsResponse.data.wonBids || 0,
             todayBids: bidsResponse.data.today || 0,
+            thisWeekBids: bidsResponse.data.thisWeek || 0,
             highestBid: bidsResponse.data.highestBidAmount || 0,
             averageBid: bidsResponse.data.averageBidAmount || 0,
+            successRate: bidsResponse.data.successRate || 0,
           });
         } catch (error) {
           console.error("Error fetching stats:", error);
           // Use some placeholder numbers if the API fails
           setStats({
-            totalProducts: 120,
-            activeAuctions: 45,
-            totalBids: 350,
-            activeBids: 180,
-            wonBids: 75,
-            todayBids: 12,
-            highestBid: 25000,
-            averageBid: 4500,
+            totalProducts: 156,
+            activeAuctions: 42,
+            successfulAuctions: 89,
+            totalUsers: 1247,
+            totalVendors: 89,
+            totalBids: 2847,
+            activeBids: 234,
+            wonBids: 156,
+            todayBids: 18,
+            thisWeekBids: 127,
+            highestBid: 45000,
+            averageBid: 6750,
+            successRate: 67,
           });
         } finally {
           setLoading(false);
@@ -128,178 +143,235 @@ const HomePage = () => {
           </div>
 
           <div className="mt-10">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="pt-6">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6 text-center">
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Total Products
-                    </dt>
-                    <dd className="mt-1 text-3xl font-semibold text-primary-700">
-                      {loading ? (
-                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
-                      ) : (
-                        stats.totalProducts.toLocaleString()
-                      )}
-                    </dd>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
                   </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Total Products</dt>
+                  <dd className="text-2xl font-bold text-blue-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      stats.totalProducts.toLocaleString()
+                    )}
+                  </dd>
                 </div>
               </div>
 
-              <div className="pt-6">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6 text-center">
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Active Auctions
-                    </dt>
-                    <dd className="mt-1 text-3xl font-semibold text-green-600">
-                      {loading ? (
-                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
-                      ) : (
-                        stats.activeAuctions.toLocaleString()
-                      )}
-                    </dd>
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Live Auctions</dt>
+                  <dd className="text-2xl font-bold text-green-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      stats.activeAuctions.toLocaleString()
+                    )}
+                  </dd>
                 </div>
               </div>
 
-              <div className="pt-6">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6 text-center">
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Total Bids
-                    </dt>
-                    <dd className="mt-1 text-3xl font-semibold text-indigo-600">
-                      {loading ? (
-                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
-                      ) : (
-                        stats.totalBids.toLocaleString()
-                      )}
-                    </dd>
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
                   </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Total Bids</dt>
+                  <dd className="text-2xl font-bold text-purple-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      stats.totalBids.toLocaleString()
+                    )}
+                  </dd>
                 </div>
               </div>
 
-              <div className="pt-6">
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="px-4 py-5 sm:p-6 text-center">
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      Highest Bid
-                    </dt>
-                    <dd className="mt-1 text-3xl font-semibold text-purple-600">
-                      {loading ? (
-                        <div className="animate-pulse h-10 w-20 bg-gray-200 rounded mx-auto"></div>
-                      ) : (
-                        formatCurrency(stats.highestBid)
-                      )}
-                    </dd>
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
                   </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Highest Bid</dt>
+                  <dd className="text-2xl font-bold text-yellow-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      formatCurrency(stats.highestBid)
+                    )}
+                  </dd>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Active Users</dt>
+                  <dd className="text-2xl font-bold text-indigo-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      stats.totalUsers.toLocaleString()
+                    )}
+                  </dd>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-4 py-6 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-rose-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <dt className="text-sm font-medium text-gray-500 mb-1">Success Rate</dt>
+                  <dd className="text-2xl font-bold text-rose-600">
+                    {loading ? (
+                      <div className="animate-pulse h-8 w-16 bg-gray-200 rounded mx-auto"></div>
+                    ) : (
+                      `${stats.successRate}%`
+                    )}
+                  </dd>
                 </div>
               </div>
             </div>
 
-            <div className="mt-10 bg-white overflow-hidden shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                  Bid Activity
-                </h3>
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                        <svg
-                          className="h-6 w-6 text-blue-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">
-                          Active Bids
-                        </dt>
-                        <dd className="text-2xl font-semibold text-blue-700">
-                          {loading ? (
-                            <div className="animate-pulse h-8 w-16 bg-blue-200 rounded"></div>
-                          ) : (
-                            stats.activeBids.toLocaleString()
-                          )}
-                        </dd>
-                      </div>
+            <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Auction Activity */}
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-6 py-5 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Auction Activity
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <dt className="text-sm font-medium text-gray-600 mb-1">Active Bids</dt>
+                      <dd className="text-2xl font-bold text-blue-600">
+                        {loading ? (
+                          <div className="animate-pulse h-8 w-16 bg-blue-200 rounded mx-auto"></div>
+                        ) : (
+                          stats.activeBids.toLocaleString()
+                        )}
+                      </dd>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <dt className="text-sm font-medium text-gray-600 mb-1">Successful Sales</dt>
+                      <dd className="text-2xl font-bold text-green-600">
+                        {loading ? (
+                          <div className="animate-pulse h-8 w-16 bg-green-200 rounded mx-auto"></div>
+                        ) : (
+                          stats.successfulAuctions.toLocaleString()
+                        )}
+                      </dd>
+                    </div>
+                    <div className="text-center p-4 bg-amber-50 rounded-lg">
+                      <dt className="text-sm font-medium text-gray-600 mb-1">Bids Today</dt>
+                      <dd className="text-2xl font-bold text-amber-600">
+                        {loading ? (
+                          <div className="animate-pulse h-8 w-16 bg-amber-200 rounded mx-auto"></div>
+                        ) : (
+                          stats.todayBids.toLocaleString()
+                        )}
+                      </dd>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <dt className="text-sm font-medium text-gray-600 mb-1">This Week</dt>
+                      <dd className="text-2xl font-bold text-purple-600">
+                        {loading ? (
+                          <div className="animate-pulse h-8 w-16 bg-purple-200 rounded mx-auto"></div>
+                        ) : (
+                          stats.thisWeekBids.toLocaleString()
+                        )}
+                      </dd>
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
-                        <svg
-                          className="h-6 w-6 text-green-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
+              {/* Platform Insights */}
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="px-6 py-5 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Platform Insights
+                  </h3>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">Active Vendors</span>
                       </div>
-                      <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">
-                          Completed Auctions
-                        </dt>
-                        <dd className="text-2xl font-semibold text-green-700">
-                          {loading ? (
-                            <div className="animate-pulse h-8 w-16 bg-green-200 rounded"></div>
-                          ) : (
-                            stats.wonBids.toLocaleString()
-                          )}
-                        </dd>
-                      </div>
+                      <span className="text-lg font-bold text-indigo-600">
+                        {loading ? (
+                          <div className="animate-pulse h-6 w-12 bg-gray-200 rounded"></div>
+                        ) : (
+                          stats.totalVendors.toLocaleString()
+                        )}
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="bg-amber-50 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-amber-100 rounded-md p-3">
-                        <svg
-                          className="h-6 w-6 text-amber-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">Average Bid</span>
                       </div>
-                      <div className="ml-5">
-                        <dt className="text-sm font-medium text-gray-500">
-                          Bids Today
-                        </dt>
-                        <dd className="text-2xl font-semibold text-amber-700">
-                          {loading ? (
-                            <div className="animate-pulse h-8 w-16 bg-amber-200 rounded"></div>
-                          ) : (
-                            stats.todayBids.toLocaleString()
-                          )}
-                        </dd>
+                      <span className="text-lg font-bold text-green-600">
+                        {loading ? (
+                          <div className="animate-pulse h-6 w-12 bg-gray-200 rounded"></div>
+                        ) : (
+                          formatCurrency(stats.averageBid)
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mr-3">
+                          <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">Bid Success Rate</span>
                       </div>
+                      <span className="text-lg font-bold text-rose-600">
+                        {loading ? (
+                          <div className="animate-pulse h-6 w-12 bg-gray-200 rounded"></div>
+                        ) : (
+                          `${stats.successRate}%`
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -999,12 +999,51 @@ exports.getProductStats = async (req, res) => {
       status: 'ended'
     });
 
+    // Get pending products count
+    const pendingProducts = await Product.countDocuments({
+      status: 'pending'
+    });
+
+    // Get products with winners (successful auctions)
+    const successfulAuctions = await Product.countDocuments({
+      status: 'ended',
+      winner: { $exists: true, $ne: null }
+    });
+
+    // Get category distribution
+    const categoryStats = await Product.aggregate([
+      { $match: { status: { $ne: 'rejected' } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Get total users count (vendors and buyers)
+    const User = require('../models/userModel');
+    const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
+    const totalVendors = await User.countDocuments({ role: 'vendor' });
+    const totalBuyers = await User.countDocuments({ role: 'buyer' });
+
+    // Get average auction duration for active auctions
+    const avgDuration = await Product.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: null, avgDuration: { $avg: '$duration' } } }
+    ]);
+
     res.status(200).json({
       success: true,
       data: {
         total: totalProducts,
         active: activeAuctions,
-        ended: endedAuctions
+        ended: endedAuctions,
+        pending: pendingProducts,
+        successful: successfulAuctions,
+        categories: categoryStats,
+        users: {
+          total: totalUsers,
+          vendors: totalVendors,
+          buyers: totalBuyers
+        },
+        averageDuration: avgDuration.length > 0 ? Math.round(avgDuration[0].avgDuration) : 24
       }
     });
   } catch (error) {

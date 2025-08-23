@@ -249,6 +249,13 @@ const getBidStats = asyncHandler(async (req, res) => {
   const today = await Bid.countDocuments({
     createdAt: { $gte: new Date().setHours(0, 0, 0, 0) },
   });
+  const thisWeek = await Bid.countDocuments({
+    createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+  });
+  const thisMonth = await Bid.countDocuments({
+    createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+  });
+
   const activeBids = await Bid.countDocuments({ status: "active" });
   const wonBids = await Bid.countDocuments({ status: "won" });
   const lostBids = await Bid.countDocuments({ status: "lost" });
@@ -258,15 +265,47 @@ const getBidStats = asyncHandler(async (req, res) => {
     { $group: { _id: null, avg: { $avg: "$amount" } } },
   ]);
 
+  // Get bid distribution by amount ranges
+  const bidRanges = await Bid.aggregate([
+    {
+      $bucket: {
+        groupBy: "$amount",
+        boundaries: [0, 1000, 5000, 10000, 25000, 50000, 100000, Infinity],
+        default: "Other",
+        output: {
+          count: { $sum: 1 },
+          avgAmount: { $avg: "$amount" }
+        }
+      }
+    }
+  ]);
+
+  // Get most active bidders (top 5)
+  const topBidders = await Bid.aggregate([
+    { $group: { _id: "$bidder", totalBids: { $sum: 1 }, totalAmount: { $sum: "$amount" } } },
+    { $sort: { totalBids: -1 } },
+    { $limit: 5 },
+    { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+    { $unwind: "$user" },
+    { $project: { name: "$user.name", totalBids: 1, totalAmount: 1 } }
+  ]);
+
+  // Success rate (won bids / total bids)
+  const successRate = total > 0 ? Math.round((wonBids / total) * 100) : 0;
+
   res.json({
     total,
     today,
+    thisWeek,
+    thisMonth,
     activeBids,
     wonBids,
     lostBids,
+    successRate,
     highestBidAmount: highestBid ? highestBid.amount : 0,
-    averageBidAmount:
-      avgBidAmount.length > 0 ? Math.round(avgBidAmount[0].avg) : 0,
+    averageBidAmount: avgBidAmount.length > 0 ? Math.round(avgBidAmount[0].avg) : 0,
+    bidRanges,
+    topBidders
   });
 });
 
