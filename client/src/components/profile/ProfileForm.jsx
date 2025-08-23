@@ -14,6 +14,7 @@ import {
 const ProfileForm = () => {
   const { state, updateProfile } = useAuth();
   const { user } = state;
+  const isAdmin = user?.role === 'admin';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -362,98 +363,100 @@ const ProfileForm = () => {
           </div>
         </div>
 
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:p-6">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Address Information</h4>
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label htmlFor="street" className="block text-sm font-medium text-gray-700">Street Address</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    {getIcon('street')}
+        {!isAdmin && (
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            <div className="px-4 py-5 sm:p-6">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Address Information</h4>
+              <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor="street" className="block text-sm font-medium text-gray-700">Street Address</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {getIcon('street')}
+                    </div>
+                    <input
+                      type="text"
+                      name="street"
+                      id="street"
+                      value={formData.address.street}
+                      onChange={handleChange}
+                      className={`pl-10 ${inputClasses('street')}`}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="street"
-                    id="street"
-                    value={formData.address.street}
-                    onChange={handleChange}
-                    className={`pl-10 ${inputClasses('street')}`}
-                  />
+                  <p className="mt-2 text-xs text-gray-500">Optional</p>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">Optional</p>
-              </div>
-              
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    {getIcon('city')}
+                
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {getIcon('city')}
+                    </div>
+                    <input
+                      type="text"
+                      name="city"
+                      id="city"
+                      value={formData.address.city}
+                      onChange={handleChange}
+                      className={`pl-10 ${inputClasses('city')}`}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="city"
-                    id="city"
-                    value={formData.address.city}
-                    onChange={handleChange}
-                    className={`pl-10 ${inputClasses('city')}`}
-                  />
                 </div>
-              </div>
-              
-              <div>
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700">State/Province</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    {getIcon('state')}
+                
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700">State/Province</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {getIcon('state')}
+                    </div>
+                    <input
+                      type="text"
+                      name="state"
+                      id="state"
+                      value={formData.address.state}
+                      onChange={handleChange}
+                      className={`pl-10 ${inputClasses('state')}`}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="state"
-                    id="state"
-                    value={formData.address.state}
-                    onChange={handleChange}
-                    className={`pl-10 ${inputClasses('state')}`}
-                  />
                 </div>
-              </div>
-              
-              <div>
-                <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">ZIP / Postal Code</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    {getIcon('zipCode')}
+                
+                <div>
+                  <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">ZIP / Postal Code</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {getIcon('zipCode')}
+                    </div>
+                    <input
+                      type="text"
+                      name="zipCode"
+                      id="zipCode"
+                      value={formData.address.zipCode}
+                      onChange={handleChange}
+                      className={`pl-10 ${inputClasses('zipCode')}`}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    id="zipCode"
-                    value={formData.address.zipCode}
-                    onChange={handleChange}
-                    className={`pl-10 ${inputClasses('zipCode')}`}
-                  />
                 </div>
-              </div>
-              
-              <div>
-                <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    {getIcon('country')}
+                
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {getIcon('country')}
+                    </div>
+                    <input
+                      type="text"
+                      name="country"
+                      id="country"
+                      value={formData.address.country}
+                      onChange={handleChange}
+                      className={`pl-10 ${inputClasses('country')}`}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    name="country"
-                    id="country"
-                    value={formData.address.country}
-                    onChange={handleChange}
-                    className={`pl-10 ${inputClasses('country')}`}
-                  />
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
         
         <div className="flex justify-end mt-6">
           <button

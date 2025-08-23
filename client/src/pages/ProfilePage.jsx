@@ -39,7 +39,13 @@ const ProfilePage = () => {
         hideForAdmin: true,
         hideForVendor: true,
       },
-      { id: "wallet", name: "Wallet", icon: CreditCardIcon }, // Removed role restrictions
+      { 
+        id: "wallet", 
+        name: "Wallet", 
+        icon: CreditCardIcon, 
+        hideForAdmin: true,
+        hideForVendor: true 
+      },
       { id: "edit", name: "Edit Profile", icon: PencilIcon },
       { id: "password", name: "Change Password", icon: KeyIcon },
     ];
@@ -165,24 +171,26 @@ const ProfilePage = () => {
             </nav>
 
             {/* Extra links */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="space-y-1">
-                <a
-                  href="#"
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
-                >
-                  <ShoppingBagIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
-                  My Purchases
-                </a>
-                <a
-                  href="#"
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
-                >
-                  <BellIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
-                  Notifications
-                </a>
+            {!isAdmin && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="space-y-1">
+                  <a
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
+                  >
+                    <ShoppingBagIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
+                    My Purchases
+                  </a>
+                  <a
+                    href="#"
+                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900"
+                  >
+                    <BellIcon className="mr-3 flex-shrink-0 h-5 w-5 text-gray-400" />
+                    Notifications
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
