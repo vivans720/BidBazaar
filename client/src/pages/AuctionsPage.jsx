@@ -31,8 +31,23 @@ const AuctionsPage = () => {
 
         // Fetch active auctions (independent of user bids)
         try {
-          const activeProductsResponse = await api.get("/products?status=active&limit=20");
-          setActiveAuctions(activeProductsResponse.data.data || []);
+          // Use fetch directly for public endpoints to avoid auth issues
+          const activeProductsResponse = await fetch('/api/products?status=active&limit=20', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (activeProductsResponse.ok) {
+            const data = await activeProductsResponse.json();
+            const activeProducts = data.data || [];
+            setActiveAuctions(activeProducts);
+            console.log(`Successfully fetched ${activeProducts.length} active auctions`);
+          } else {
+            console.error("Failed to fetch active auctions:", activeProductsResponse.status);
+            setActiveAuctions([]);
+          }
         } catch (error) {
           console.error("Error fetching active auctions:", error);
           setActiveAuctions([]);
@@ -40,12 +55,35 @@ const AuctionsPage = () => {
 
         // Fetch all expired auctions from the entire site (independent of user bids)
         try {
-          const expiredProductsResponse = await api.get("/products?status=ended&limit=50");
-          const expiredProducts = expiredProductsResponse.data.data || [];
-          setExpiredAuctions(expiredProducts);
+          // Use axios directly without authentication to ensure public access
+          const expiredProductsResponse = await fetch('/api/products?status=ended&limit=50', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (expiredProductsResponse.ok) {
+            const data = await expiredProductsResponse.json();
+            const expiredProducts = data.data || [];
+            setExpiredAuctions(expiredProducts);
+            console.log(`Successfully fetched ${expiredProducts.length} expired auctions`);
+          } else {
+            console.error("Failed to fetch expired auctions:", expiredProductsResponse.status);
+            setExpiredAuctions([]);
+          }
         } catch (error) {
           console.error("Error fetching expired auctions:", error);
-          setExpiredAuctions([]);
+          // Fallback: try with api instance
+          try {
+            const fallbackResponse = await api.get("/products?status=ended&limit=50");
+            const expiredProducts = fallbackResponse.data.data || [];
+            setExpiredAuctions(expiredProducts);
+            console.log(`Fallback: Successfully fetched ${expiredProducts.length} expired auctions`);
+          } catch (fallbackError) {
+            console.error("Fallback also failed:", fallbackError);
+            setExpiredAuctions([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching auctions data:", error);
