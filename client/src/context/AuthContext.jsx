@@ -113,13 +113,24 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         console.log("Loading user data with token:", token);
-        const res = await api.get("/users/me");
+        // Add timeout to prevent infinite loading
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const res = await api.get("/users/me", {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         console.log("User data loaded:", res.data);
         dispatch({ type: "USER_LOADED", payload: res.data.data });
       } catch (err) {
         console.error("Error loading user:", err.response?.data || err);
         dispatch({ type: "AUTH_ERROR" });
       }
+    } else {
+      // No token, immediately set loading to false
+      dispatch({ type: "AUTH_ERROR" });
     }
   };
 
@@ -285,7 +296,7 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       loadUser();
     } else {
-      // No token, set loading to false
+      // No token, set loading to false immediately
       dispatch({ type: "AUTH_ERROR" });
     }
   }, []);
