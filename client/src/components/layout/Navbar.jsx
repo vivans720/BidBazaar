@@ -12,7 +12,7 @@ import logo from "../../assets/logo.png";
 
 // Navigation items configuration
 const getNavigation = (isAuthenticated, userRole) => [
-  { name: "Home", href: isAuthenticated ? "/dashboard" : "/", public: true },
+  { name: "Home", href: "/", public: true },
   { name: "About", href: "/about", public: true, hideForAdmin: true },
   { name: "Contact", href: "/contact", public: true, hideForAdmin: true },
   { name: "FAQ", href: "/faq", public: true, hideForAdmin: true },
@@ -31,7 +31,6 @@ const getNavigation = (isAuthenticated, userRole) => [
     hideForVendor: true,
   },
   { name: "Wallet", href: "/wallet", public: false, hideForAdmin: true },
-  { name: "Dashboard", href: "/dashboard", public: false },
 ];
 
 function classNames(...classes) {
@@ -55,8 +54,8 @@ const Navbar = () => {
       !(isVendor && item.hideForVendor)
   );
 
-  // Home URL changes based on authentication status
-  const homeUrl = isAuthenticated ? "/dashboard" : "/";
+  // Home URL is always "/" for all users
+  const homeUrl = "/";
 
   // Check if the path is active
   const isActivePath = (path) => {
@@ -249,33 +248,6 @@ const Navbar = () => {
                               )}
                             </Menu.Item>
                           )}
-                          <Menu.Item>
-                            {({ active }) => (
-                              <Link
-                                to="/dashboard"
-                                className={classNames(
-                                  active ? "bg-gray-50" : "",
-                                  "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
-                                )}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-5 w-5 text-gray-400"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                                  />
-                                </svg>
-                                Dashboard
-                              </Link>
-                            )}
-                          </Menu.Item>
                           <div className="border-t border-gray-100"></div>
                           <Menu.Item>
                             {({ active }) => (
