@@ -95,6 +95,48 @@ const AuctionsPage = () => {
     fetchData();
   }, []);
 
+  // Real-time countdown component
+  const CountdownTimer = ({ endTime }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+      const calculateTimeLeft = () => {
+        const now = new Date();
+        const end = new Date(endTime);
+        const diff = end - now;
+
+        if (diff <= 0) {
+          setTimeLeft('Ended');
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        let result = '';
+        if (days > 0) result += `${days}d `;
+        if (hours > 0 || days > 0) result += `${hours}h `;
+        if (minutes > 0 || hours > 0 || days > 0) result += `${minutes}m `;
+        if (days === 0) result += `${seconds}s`;
+
+        setTimeLeft(result.trim());
+      };
+
+      calculateTimeLeft();
+      const interval = setInterval(calculateTimeLeft, 1000);
+
+      return () => clearInterval(interval);
+    }, [endTime]);
+
+    return (
+      <span className={`text-sm font-medium ${timeLeft === 'Ended' ? 'text-red-600' : 'text-red-600'}`}>
+        {timeLeft}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -246,12 +288,7 @@ const AuctionsPage = () => {
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">Time Left:</span>
-                            <span className="text-sm text-red-600 font-medium">
-                              {new Date(auction.endTime) > new Date() 
-                                ? `${Math.ceil((new Date(auction.endTime) - new Date()) / (1000 * 60 * 60 * 24))} days`
-                                : "Ended"
-                              }
-                            </span>
+                            <CountdownTimer endTime={auction.endTime} />
                           </div>
                         </div>
 

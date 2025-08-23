@@ -7,29 +7,32 @@ const ProductCard = ({ product }) => {
   const [imageError, setImageError] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [auctionStatus, setAuctionStatus] = useState(product.status);
+  const [timeLeft, setTimeLeft] = useState('');
   
   // Calculate time remaining and update status if expired
   useEffect(() => {
-    const checkAuctionStatus = () => {
+    const updateTimeAndStatus = () => {
       const now = new Date();
       const endTime = new Date(product.endTime);
       
       if (endTime < now && product.status === 'active') {
         setAuctionStatus('ended');
+        setTimeLeft('Auction ended');
       } else {
         setAuctionStatus(product.status);
+        if (product.status === 'active') {
+          setTimeLeft(formatDistanceToNow(endTime, { addSuffix: true }));
+        }
       }
     };
     
-    checkAuctionStatus();
+    updateTimeAndStatus();
     
-    // Update status every minute
-    const intervalId = setInterval(checkAuctionStatus, 60000);
+    // Update every second for real-time countdown
+    const intervalId = setInterval(updateTimeAndStatus, 1000);
     
     return () => clearInterval(intervalId);
   }, [product.endTime, product.status]);
-  
-  const timeLeft = formatDistanceToNow(new Date(product.endTime), { addSuffix: true });
   
   const fallbackImage = 'https://via.placeholder.com/400x300?text=No+Image+Available';
   const imageUrl = !imageError && product.images[0]?.url ? product.images[0].url : fallbackImage;
