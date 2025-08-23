@@ -35,14 +35,29 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
       console.log("Stats response:", statsResponse.data);
       console.log("Feedback response:", feedbackResponse.data);
 
-      setFeedbackStats(statsResponse.data.data.stats);
-      setRecentFeedback(feedbackResponse.data.data.feedback);
+      // Safely set stats with defaults
+      const stats = statsResponse.data?.data?.stats || {};
+      setFeedbackStats({
+        totalFeedbacks: stats.totalFeedbacks || 0,
+        averageSellerRating: stats.averageSellerRating || 0,
+        averageProductRating: stats.averageProductRating || 0,
+        recommendationRate: stats.recommendationRate || 0,
+        ...stats
+      });
+      
+      // Safely set feedback array
+      setRecentFeedback(feedbackResponse.data?.data?.feedback || []);
     } catch (error) {
       console.error("Error fetching seller feedback:", error);
       console.error("Error details:", error.response?.data || error.message);
       
-      // Set empty state on error to prevent infinite loading
-      setFeedbackStats({});
+      // Set safe default state on error
+      setFeedbackStats({
+        totalFeedbacks: 0,
+        averageSellerRating: 0,
+        averageProductRating: 0,
+        recommendationRate: 0
+      });
       setRecentFeedback([]);
     } finally {
       setLoading(false);
@@ -56,11 +71,13 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
       large: "w-6 h-6",
     };
 
+    const safeRating = rating || 0;
+
     return (
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
           <span key={star} className={sizeClasses[size]}>
-            {star <= Math.round(rating) ? (
+            {star <= Math.round(safeRating) ? (
               <StarIconSolid className="text-yellow-400" />
             ) : (
               <StarIcon className="text-gray-300" />
@@ -68,7 +85,7 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
           </span>
         ))}
         <span className="ml-2 text-sm text-gray-600 font-medium">
-          {rating ? rating.toFixed(1) : "0.0"}
+          {safeRating.toFixed(1)}
         </span>
       </div>
     );
@@ -107,16 +124,18 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
   }
 
   const getRatingColor = (rating) => {
-    if (rating >= 4.5) return "text-green-600";
-    if (rating >= 4.0) return "text-yellow-600";
-    if (rating >= 3.0) return "text-orange-600";
+    const safeRating = rating || 0;
+    if (safeRating >= 4.5) return "text-green-600";
+    if (safeRating >= 4.0) return "text-yellow-600";
+    if (safeRating >= 3.0) return "text-orange-600";
     return "text-red-600";
   };
 
   const getRatingBgColor = (rating) => {
-    if (rating >= 4.5) return "bg-green-50 border-green-200";
-    if (rating >= 4.0) return "bg-yellow-50 border-yellow-200";
-    if (rating >= 3.0) return "bg-orange-50 border-orange-200";
+    const safeRating = rating || 0;
+    if (safeRating >= 4.5) return "bg-green-50 border-green-200";
+    if (safeRating >= 4.0) return "bg-yellow-50 border-yellow-200";
+    if (safeRating >= 3.0) return "bg-orange-50 border-orange-200";
     return "bg-red-50 border-red-200";
   };
 
@@ -207,10 +226,10 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Reviews</p>
               <p className="text-2xl font-bold text-blue-600">
-                {feedbackStats.totalFeedbacks}
+                {feedbackStats?.totalFeedbacks || 0}
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                {Math.round(feedbackStats.recommendationRate * 100)}% recommend
+                {Math.round((feedbackStats?.recommendationRate || 0) * 100)}% recommend
               </p>
             </div>
             <div className="bg-blue-100 rounded-full p-2">
