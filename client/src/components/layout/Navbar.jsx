@@ -1,7 +1,7 @@
 import React, { useState, Fragment } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon, BellIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon, BellIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
 import NotificationDropdown from "../notifications/NotificationDropdown";
 import logo from "../../assets/logo.png";
