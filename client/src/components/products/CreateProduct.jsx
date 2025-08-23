@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { toast } from 'react-toastify';
 
 const CreateProduct = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -41,11 +42,21 @@ const CreateProduct = () => {
       return;
     }
     
-    setSelectedFiles(files);
+    // Add new files to existing ones instead of replacing
+    const allFiles = [...selectedFiles, ...files];
+    if (allFiles.length > 5) {
+      toast.error('Maximum 5 images allowed per product');
+      return;
+    }
     
-    // Create preview URLs for the selected files
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setSelectedFiles(allFiles);
+    
+    // Create preview URLs for all files
+    const newPreviewUrls = [...previewUrls, ...files.map(file => URL.createObjectURL(file))];
     setPreviewUrls(newPreviewUrls);
+    
+    // Reset the input value to allow selecting the same files again
+    e.target.value = '';
   };
 
   const handleDrag = (e) => {
@@ -347,16 +358,18 @@ const CreateProduct = () => {
                       <div className="flex justify-center text-sm text-gray-600">
                         <button
                           type="button"
-                          onClick={() => document.getElementById('file-upload').click()}
+                          onClick={() => {
+                            console.log('Button clicked, triggering file input');
+                            fileInputRef.current?.click();
+                          }}
                           className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 px-2 py-1"
                         >
-                          <span>Upload Multiple Files</span>
+                          <span>Select Multiple Images</span>
                         </button>
                         <input
-                          id="file-upload"
-                          name="images"
+                          ref={fileInputRef}
                           type="file"
-                          multiple
+                          multiple={true}
                           accept="image/*"
                           onChange={handleFileChange}
                           style={{ display: 'none' }}
