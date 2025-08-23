@@ -24,12 +24,18 @@ export const NotificationProvider = ({ children }) => {
       const response = await api.get(`/notifications?page=${page}&unreadOnly=${unreadOnly}`);
       
       if (response.data.success) {
-        setNotifications(response.data.data);
-        setUnreadCount(response.data.pagination.unreadCount);
+        setNotifications(response.data.data || []);
+        setUnreadCount(response.data.pagination?.unreadCount || 0);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Failed to fetch notifications');
+      // Set empty notifications array on error to show "No notifications" message
+      setNotifications([]);
+      setUnreadCount(0);
+      // Only show toast error if it's not a 404 or authentication issue
+      if (error.response?.status !== 404 && error.response?.status !== 401) {
+        toast.error('Failed to fetch notifications');
+      }
     } finally {
       setLoading(false);
     }
@@ -40,10 +46,12 @@ export const NotificationProvider = ({ children }) => {
     try {
       const response = await api.get('/notifications/unread-count');
       if (response.data.success) {
-        setUnreadCount(response.data.count);
+        setUnreadCount(response.data.count || 0);
       }
     } catch (error) {
       console.error('Error fetching unread count:', error);
+      // Set unread count to 0 on error to prevent showing incorrect badge
+      setUnreadCount(0);
     }
   };
 
