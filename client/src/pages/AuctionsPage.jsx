@@ -18,12 +18,18 @@ const AuctionsPage = () => {
       try {
         setLoading(true);
         
-        // Fetch user bids
-        const bidsResponse = await getUserBids();
-        const bids = bidsResponse.data;
-        setUserBids(bids);
+        // Fetch user bids (optional - don't fail if this errors)
+        let bids = [];
+        try {
+          const bidsResponse = await getUserBids();
+          bids = bidsResponse.data || [];
+          setUserBids(bids);
+        } catch (error) {
+          console.error("Error fetching user bids:", error);
+          setUserBids([]);
+        }
 
-        // Fetch active auctions
+        // Fetch active auctions (independent of user bids)
         try {
           const activeProductsResponse = await api.get("/products?status=active&limit=20");
           setActiveAuctions(activeProductsResponse.data.data || []);
@@ -32,7 +38,7 @@ const AuctionsPage = () => {
           setActiveAuctions([]);
         }
 
-        // Fetch all expired auctions from the entire site
+        // Fetch all expired auctions from the entire site (independent of user bids)
         try {
           const expiredProductsResponse = await api.get("/products?status=ended&limit=50");
           const expiredProducts = expiredProductsResponse.data.data || [];
