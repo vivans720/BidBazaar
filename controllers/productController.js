@@ -56,9 +56,7 @@ exports.getProducts = async (req, res) => {
       query.status = status;
     } else {
       // By default, show only active products for public viewing
-      if (!req.user || req.user.role !== "admin") {
-        query.status = "active";
-      }
+      query.status = "active";
     }
 
     // Sorting
