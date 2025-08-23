@@ -21,6 +21,49 @@ const HomePage = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    // Only fetch stats if user is not authenticated and not loading
+    if (!authLoading && !isAuthenticated) {
+      const fetchStats = async () => {
+        try {
+          // Fetch product stats and bid stats in parallel
+          const [productsResponse, bidsResponse] = await Promise.all([
+            api.get("/products/stats"),
+            getBidStats(),
+          ]);
+
+          setStats({
+            totalProducts: productsResponse.data.total || 0,
+            activeAuctions: productsResponse.data.active || 0,
+            totalBids: bidsResponse.data.total || 0,
+            activeBids: bidsResponse.data.activeBids || 0,
+            wonBids: bidsResponse.data.wonBids || 0,
+            todayBids: bidsResponse.data.today || 0,
+            highestBid: bidsResponse.data.highestBidAmount || 0,
+            averageBid: bidsResponse.data.averageBidAmount || 0,
+          });
+        } catch (error) {
+          console.error("Error fetching stats:", error);
+          // Use some placeholder numbers if the API fails
+          setStats({
+            totalProducts: 120,
+            activeAuctions: 45,
+            totalBids: 350,
+            activeBids: 180,
+            wonBids: 75,
+            todayBids: 12,
+            highestBid: 25000,
+            averageBid: 4500,
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchStats();
+    }
+  }, [authLoading, isAuthenticated]);
+
   // Show loading spinner while auth is being determined
   if (authLoading) {
     return (
@@ -34,46 +77,6 @@ const HomePage = () => {
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch product stats and bid stats in parallel
-        const [productsResponse, bidsResponse] = await Promise.all([
-          api.get("/products/stats"),
-          getBidStats(),
-        ]);
-
-        setStats({
-          totalProducts: productsResponse.data.total || 0,
-          activeAuctions: productsResponse.data.active || 0,
-          totalBids: bidsResponse.data.total || 0,
-          activeBids: bidsResponse.data.activeBids || 0,
-          wonBids: bidsResponse.data.wonBids || 0,
-          todayBids: bidsResponse.data.today || 0,
-          highestBid: bidsResponse.data.highestBidAmount || 0,
-          averageBid: bidsResponse.data.averageBidAmount || 0,
-        });
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        // Use some placeholder numbers if the API fails
-        setStats({
-          totalProducts: 120,
-          activeAuctions: 45,
-          totalBids: 350,
-          activeBids: 180,
-          wonBids: 75,
-          todayBids: 12,
-          highestBid: 25000,
-          averageBid: 4500,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
 
   return (
     <div className="bg-white">
