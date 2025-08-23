@@ -980,6 +980,44 @@ const updateExpiredAuctions = async (productsToCheck) => {
   return expiredProducts;
 };
 
+// @desc    Get product statistics
+// @route   GET /api/products/stats
+// @access  Public
+exports.getProductStats = async (req, res) => {
+  try {
+    // Update expired auctions first
+    await updateExpiredAuctions();
+
+    // Get total products count
+    const totalProducts = await Product.countDocuments();
+
+    // Get active auctions count
+    const activeAuctions = await Product.countDocuments({
+      status: 'active'
+    });
+
+    // Get ended auctions count
+    const endedAuctions = await Product.countDocuments({
+      status: 'ended'
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        total: totalProducts,
+        active: activeAuctions,
+        ended: endedAuctions
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching product stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server Error'
+    });
+  }
+};
+
 module.exports = {
   createProduct: exports.createProduct,
   getProducts: exports.getProducts,
@@ -991,4 +1029,5 @@ module.exports = {
   relistProduct: exports.relistProduct,
   removeUnsoldProduct: exports.removeUnsoldProduct,
   getPriceRecommendation: exports.getPriceRecommendation,
+  getProductStats: exports.getProductStats,
 };

@@ -10,7 +10,8 @@ const {
   reviewProduct,
   relistProduct,
   removeUnsoldProduct,
-  getPriceRecommendation
+  getPriceRecommendation,
+  getProductStats
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -18,6 +19,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getProducts);
+router.get('/stats', getProductStats);
 router.get('/:id', getProduct);
 
 // Protect all routes after this middleware
