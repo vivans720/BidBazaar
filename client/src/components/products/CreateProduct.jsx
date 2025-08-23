@@ -28,6 +28,14 @@ const CreateProduct = () => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
+    console.log('Files selected:', files.length, files.map(f => f.name));
+    
+    // Limit to maximum 5 images
+    if (files.length > 5) {
+      toast.error('Maximum 5 images allowed per product');
+      return;
+    }
+    
     setSelectedFiles(files);
     
     // Create preview URLs for the selected files
@@ -349,7 +357,7 @@ const CreateProduct = () => {
                         </label>
                         <p className="pl-1">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB each (Max 5 images)</p>
                     </div>
                   </div>
                   {submitAttempted && selectedFiles.length === 0 && (
