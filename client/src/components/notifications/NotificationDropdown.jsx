@@ -19,10 +19,10 @@ const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !loading) {
       fetchNotifications(1, false); // Fetch all notifications when dropdown opens
     }
-  }, [isOpen, fetchNotifications]);
+  }, [isOpen]);
 
   const handleNotificationClick = async (notification) => {
     if (!notification.read) {

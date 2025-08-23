@@ -19,23 +19,34 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch notifications
   const fetchNotifications = async (page = 1, unreadOnly = false) => {
+    if (loading) return; // Prevent multiple simultaneous requests
+    
     try {
       setLoading(true);
-      const response = await api.get(`/notifications?page=${page}&unreadOnly=${unreadOnly}`);
       
-      if (response.data.success) {
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const response = await Promise.race([
+        api.get(`/notifications?page=${page}&unreadOnly=${unreadOnly}`),
+        timeoutPromise
+      ]);
+      
+      if (response.data && response.data.success) {
         setNotifications(response.data.data || []);
         setUnreadCount(response.data.pagination?.unreadCount || 0);
+      } else {
+        // Handle unsuccessful response or missing data
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
       // Set empty notifications array on error to show "No notifications" message
       setNotifications([]);
       setUnreadCount(0);
-      // Only show toast error if it's not a 404 or authentication issue
-      if (error.response?.status !== 404 && error.response?.status !== 401) {
-        toast.error('Failed to fetch notifications');
-      }
     } finally {
       setLoading(false);
     }
