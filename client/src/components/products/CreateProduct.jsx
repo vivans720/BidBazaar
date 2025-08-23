@@ -74,33 +74,64 @@ const CreateProduct = () => {
   };
 
   const uploadImages = async (files) => {
-    const uploadedImages = [];
-    for (const file of files) {
+    if (files.length === 0) {
+      throw new Error('No files to upload');
+    }
+
+    // Use multiple upload endpoint for multiple files
+    if (files.length > 1) {
       const formData = new FormData();
-      formData.append('image', file);
+      files.forEach(file => {
+        formData.append('images', file);
+      });
       
       try {
-        console.log('Uploading image:', file.name);
+        console.log(`Uploading ${files.length} images via multiple upload...`);
+        const response = await api.post('/upload/multiple', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        console.log('Multiple upload response:', response.data);
+        
+        if (!response.data.images || !Array.isArray(response.data.images)) {
+          throw new Error('Invalid response from upload service');
+        }
+        
+        return response.data.images;
+      } catch (err) {
+        console.error('Error uploading multiple images:', {
+          fileCount: files.length,
+          error: err.response?.data || err.message
+        });
+        throw new Error(`Failed to upload images: ${err.response?.data?.error || err.message}`);
+      }
+    } else {
+      // Single file upload for backward compatibility
+      const formData = new FormData();
+      formData.append('image', files[0]);
+      
+      try {
+        console.log('Uploading single image:', files[0].name);
         const response = await api.post('/upload', formData);
-        console.log('Upload response:', response.data);
+        console.log('Single upload response:', response.data);
         
         if (!response.data.url) {
           throw new Error('No URL received from upload service');
         }
         
-        uploadedImages.push({
+        return [{
           url: response.data.url,
           public_id: response.data.public_id
-        });
+        }];
       } catch (err) {
-        console.error('Error uploading image:', {
-          fileName: file.name,
+        console.error('Error uploading single image:', {
+          fileName: files[0].name,
           error: err.response?.data || err.message
         });
-        throw new Error(`Failed to upload image ${file.name}: ${err.response?.data?.error || err.message}`);
+        throw new Error(`Failed to upload image ${files[0].name}: ${err.response?.data?.error || err.message}`);
       }
     }
-    return uploadedImages;
   };
 
   const validateForm = () => {
