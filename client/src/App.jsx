@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import { AuthProvider } from "./context/AuthContext";
 import { LenisProvider } from "./context/LenisContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import PrivateRoute from "./utils/PrivateRoute";
 
 import Navbar from "./components/layout/Navbar";
@@ -25,14 +26,16 @@ import UserBidsPage from "./pages/UserBidsPage";
 import WalletPage from "./pages/WalletPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import FeedbackSubmissionPage from "./pages/FeedbackSubmissionPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import TokenDebugger from "./components/debug/TokenDebugger";
 
 const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <LenisProvider>
-          <div className="flex flex-col min-h-screen">
+        <NotificationProvider>
+          <LenisProvider>
+            <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">
               <Routes>
@@ -55,6 +58,7 @@ const App = () => {
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/bids" element={<UserBidsPage />} />
                   <Route path="/wallet" element={<WalletPage />} />
+                  <Route path="/notifications" element={<NotificationsPage />} />
                   <Route
                     path="/feedback/:productId"
                     element={<FeedbackPage />}
@@ -89,9 +93,10 @@ const App = () => {
             </main>
             <Footer />
             <ScrollToTopButton />
-          </div>
-          <ToastContainer position="top-right" autoClose={5000} />
-        </LenisProvider>
+            </div>
+            <ToastContainer position="top-right" autoClose={5000} />
+          </LenisProvider>
+        </NotificationProvider>
       </AuthProvider>
     </Router>
   );

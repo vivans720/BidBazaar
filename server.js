@@ -25,6 +25,7 @@ const bidRoutes = require("./routes/bidRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -89,6 +90,61 @@ const updateExpiredAuctions = async () => {
         // Update the winning bid status to 'won'
         highestBid.status = "won";
         await highestBid.save();
+
+        // Create notifications for auction end
+        const { createNotification } = require("./controllers/notificationController");
+        
+        try {
+          // Notify the winner
+          await createNotification({
+            recipient: highestBid.bidder._id,
+            type: 'auction_won',
+            title: 'Congratulations! You Won!',
+            message: `You won the auction for "${product.title}" with a bid of ₹${highestBid.amount}`,
+            data: {
+              productId: product._id,
+              bidId: highestBid._id,
+              amount: highestBid.amount,
+              url: `/products/${product._id}`
+            }
+          });
+
+          // Notify the vendor
+          await createNotification({
+            recipient: product.vendor,
+            type: 'auction_won',
+            title: 'Your Auction Has Ended',
+            message: `Your auction for "${product.title}" has ended. Winner: ${highestBid.bidder.name} with ₹${highestBid.amount}`,
+            data: {
+              productId: product._id,
+              bidId: highestBid._id,
+              amount: highestBid.amount,
+              url: `/products/${product._id}`
+            }
+          });
+
+          // Notify losing bidders
+          const losingBids = await Bid.find({ 
+            product: product._id, 
+            bidder: { $ne: highestBid.bidder._id } 
+          }).populate('bidder', 'name');
+
+          for (const losingBid of losingBids) {
+            await createNotification({
+              recipient: losingBid.bidder._id,
+              type: 'auction_lost',
+              title: 'Auction Ended',
+              message: `The auction for "${product.title}" has ended. You were outbid. Final price: ₹${highestBid.amount}`,
+              data: {
+                productId: product._id,
+                amount: highestBid.amount,
+                url: `/products/${product._id}`
+              }
+            });
+          }
+        } catch (notificationError) {
+          console.error('Error creating auction end notifications:', notificationError);
+        }
 
         // Handle wallet transactions for auction end
         try {
@@ -248,6 +304,7 @@ app.use("/api/bids", bidRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Basic route
 app.get("/", (req, res) => {

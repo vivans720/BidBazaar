@@ -1,13 +1,9 @@
-import React, { Fragment } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import {
-  Bars3Icon,
-  XMarkIcon,
-  UserCircleIcon,
-  BellIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon, BellIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
+import NotificationDropdown from "../notifications/NotificationDropdown";
 import logo from "../../assets/logo.png";
 
 // Navigation items configuration
@@ -120,14 +116,8 @@ const Navbar = () => {
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                 {isAuthenticated ? (
                   <>
-                    {/* Notification bell */}
-                    <button
-                      type="button"
-                      className="rounded-full bg-primary-500 p-1 text-white hover:bg-primary-400 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600 mr-3"
-                    >
-                      <span className="sr-only">View notifications</span>
-                      <BellIcon className="h-6 w-6" aria-hidden="true" />
-                    </button>
+                    {/* Notification dropdown */}
+                    <NotificationDropdown />
 
                     {/* Profile dropdown */}
                     <Menu as="div" className="relative ml-3">

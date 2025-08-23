@@ -1,7 +1,9 @@
 const Bid = require("../models/bidModel");
 const Product = require("../models/productModel");
 const Wallet = require("../models/walletModel");
+const Transaction = require("../models/transactionModel");
 const User = require("../models/userModel");
+const { createNotification } = require("./notificationController");
 const asyncHandler = require("express-async-handler");
 
 // @desc    Place a bid on a product
@@ -159,6 +161,42 @@ const placeBid = asyncHandler(async (req, res) => {
     // Update product's current price
     product.currentPrice = amount;
     await product.save();
+
+    // Create notifications for bid events
+    try {
+      // Notify the product vendor about the new bid
+      await createNotification({
+        recipient: product.vendor,
+        type: 'bid_placed',
+        title: 'New Bid Placed',
+        message: `${req.user.name} placed a bid of ₹${amount} on your product "${product.title}"`,
+        data: {
+          productId: product._id,
+          bidId: bid._id,
+          amount: amount,
+          url: `/products/${product._id}`
+        }
+      });
+
+      // If there was a previous highest bidder (not the current user), notify them they've been outbid
+      if (highestBid && highestBid.bidder.toString() !== req.user._id.toString()) {
+        await createNotification({
+          recipient: highestBid.bidder,
+          type: 'bid_outbid',
+          title: 'You\'ve Been Outbid',
+          message: `Your bid of ₹${highestBid.amount} on "${product.title}" has been outbid. New highest bid: ₹${amount}`,
+          data: {
+            productId: product._id,
+            bidId: bid._id,
+            amount: amount,
+            url: `/products/${product._id}`
+          }
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error creating bid notifications:', notificationError);
+      // Don't fail the bid if notification creation fails
+    }
 
     // Populate the bid with user details for response
     await bid.populate("bidder", "name email");

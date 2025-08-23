@@ -1,6 +1,7 @@
 const Wallet = require("../models/walletModel");
 const Transaction = require("../models/transactionModel");
 const User = require("../models/userModel");
+const { createNotification } = require("./notificationController");
 const asyncHandler = require("express-async-handler");
 
 // @desc    Get user's wallet details
@@ -100,6 +101,22 @@ const depositFunds = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, {
       walletBalance: wallet.balance,
     });
+
+    // Create notification for funds added
+    try {
+      await createNotification({
+        recipient: req.user._id,
+        type: 'payment_received',
+        title: 'Funds Added Successfully',
+        message: `₹${amount} has been added to your wallet via ${paymentMethod}. New balance: ₹${wallet.balance}`,
+        data: {
+          amount: amount,
+          url: '/wallet'
+        }
+      });
+    } catch (notificationError) {
+      console.error('Error creating wallet notification:', notificationError);
+    }
 
     res.status(200).json({
       success: true,
