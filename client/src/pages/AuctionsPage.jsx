@@ -32,16 +32,11 @@ const AuctionsPage = () => {
           setActiveAuctions([]);
         }
 
-        // Fetch expired auctions where user has bids
+        // Fetch all expired auctions from the entire site
         try {
-          const expiredProductsResponse = await api.get("/products?status=ended&limit=20");
+          const expiredProductsResponse = await api.get("/products?status=ended&limit=50");
           const expiredProducts = expiredProductsResponse.data.data || [];
-          
-          // Filter to only show expired auctions where user has bids
-          const userExpiredAuctions = expiredProducts.filter(product => 
-            bids.some(bid => bid.product && bid.product._id === product._id)
-          );
-          setExpiredAuctions(userExpiredAuctions);
+          setExpiredAuctions(expiredProducts);
         } catch (error) {
           console.error("Error fetching expired auctions:", error);
           setExpiredAuctions([]);
@@ -99,7 +94,7 @@ const AuctionsPage = () => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                My Expired Auctions ({expiredAuctions.length})
+                All Expired Auctions ({expiredAuctions.length})
               </button>
             </nav>
           </div>
@@ -247,7 +242,7 @@ const AuctionsPage = () => {
                       No Expired Auctions
                     </h3>
                     <p className="mt-2 text-gray-500">
-                      You haven't participated in any expired auctions yet.
+                      There are no expired auctions on the platform yet.
                     </p>
                     <div className="mt-6">
                       <button
@@ -262,6 +257,7 @@ const AuctionsPage = () => {
                   <div className="space-y-4">
                     {expiredAuctions.map((auction) => {
                       const userBid = userBids.find(bid => bid.product && bid.product._id === auction._id);
+                      const hasUserBid = !!userBid;
                       const isWinner = userBid && userBid.status === "won";
                       
                       return (
@@ -286,6 +282,9 @@ const AuctionsPage = () => {
                                 <p className="text-sm text-gray-500 mb-1">
                                   {auction.category}
                                 </p>
+                                <p className="text-sm text-gray-600 mb-1">
+                                  Seller: {auction.vendor?.name || "Unknown"}
+                                </p>
                                 <p className="text-sm text-gray-600">
                                   Ended: {new Date(auction.endTime).toLocaleDateString()} at{" "}
                                   {new Date(auction.endTime).toLocaleTimeString([], {
@@ -294,7 +293,7 @@ const AuctionsPage = () => {
                                   })}
                                 </p>
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 mt-2">
-                                  Expired
+                                  Ended
                                 </span>
                               </div>
                             </div>
@@ -308,33 +307,50 @@ const AuctionsPage = () => {
                                   </div>
                                 </div>
                                 
-                                {userBid && (
-                                  <div>
-                                    <span className="text-sm text-gray-600">Your Bid:</span>
-                                    <div className="font-medium text-blue-600">
-                                      {formatCurrency(userBid.amount)}
-                                    </div>
+                                <div>
+                                  <span className="text-sm text-gray-600">Starting Price:</span>
+                                  <div className="text-sm text-gray-500">
+                                    {formatCurrency(auction.startingPrice)}
                                   </div>
-                                )}
-                                
-                                <div className="mt-3">
-                                  <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                                    isWinner 
-                                      ? "bg-green-100 text-green-800" 
-                                      : "bg-red-100 text-red-800"
-                                  }`}>
-                                    {isWinner ? "🎉 You Won!" : "Lost"}
-                                  </span>
                                 </div>
                                 
-                                {isWinner && (
-                                  <div className="mt-2">
-                                    <Link
-                                      to={`/feedback/submit/${auction._id}`}
-                                      className="text-sm text-primary-600 hover:text-primary-500"
-                                    >
-                                      Leave Feedback →
-                                    </Link>
+                                {hasUserBid && (
+                                  <>
+                                    <div>
+                                      <span className="text-sm text-gray-600">Your Bid:</span>
+                                      <div className="font-medium text-blue-600">
+                                        {formatCurrency(userBid.amount)}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="mt-3">
+                                      <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                                        isWinner 
+                                          ? "bg-green-100 text-green-800" 
+                                          : "bg-red-100 text-red-800"
+                                      }`}>
+                                        {isWinner ? "🎉 You Won!" : "You Lost"}
+                                      </span>
+                                    </div>
+                                    
+                                    {isWinner && (
+                                      <div className="mt-2">
+                                        <Link
+                                          to={`/feedback/submit/${auction._id}`}
+                                          className="text-sm text-primary-600 hover:text-primary-500"
+                                        >
+                                          Leave Feedback →
+                                        </Link>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                                
+                                {!hasUserBid && (
+                                  <div className="mt-3">
+                                    <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-600">
+                                      No Participation
+                                    </span>
                                   </div>
                                 )}
                               </div>
