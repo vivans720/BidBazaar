@@ -1,7 +1,12 @@
 import React, { useState, Fragment } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon, BellIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  BellIcon,
+  UserCircleIcon,
+} from "@heroicons/react/24/outline";
 import { useAuth } from "../../context/AuthContext";
 import NotificationDropdown from "../notifications/NotificationDropdown";
 import logo from "../../assets/logo.png";
@@ -15,13 +20,6 @@ const getNavigation = (isAuthenticated, userRole) => [
   {
     name: "Auctions",
     href: "/products",
-    public: false,
-    hideForAdmin: true,
-    hideForVendor: true,
-  },
-  {
-    name: "My Bids",
-    href: "/bids",
     public: false,
     hideForAdmin: true,
     hideForVendor: true,
@@ -178,37 +176,6 @@ const Navbar = () => {
                               </Link>
                             )}
                           </Menu.Item>
-                          {!isAdmin && !isVendor && (
-                            <>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <Link
-                                    to="/bids"
-                                    className={classNames(
-                                      active ? "bg-gray-50" : "",
-                                      "flex items-center gap-2 px-4 py-2 text-sm text-gray-700"
-                                    )}
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-5 w-5 text-gray-400"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                      />
-                                    </svg>
-                                    My Bids
-                                  </Link>
-                                )}
-                              </Menu.Item>
-                            </>
-                          )}
                           {!isAdmin && (
                             <Menu.Item>
                               {({ active }) => (

@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import ProfileForm from "../components/profile/ProfileForm";
 import PasswordForm from "../components/profile/PasswordForm";
 import UserInfo from "../components/dashboard/UserInfo";
-import UserBids from "../components/user/UserBids";
 import WalletBalance from "../components/wallet/WalletBalance";
 import DepositFunds from "../components/wallet/DepositFunds";
 
@@ -12,7 +11,6 @@ import DepositFunds from "../components/wallet/DepositFunds";
 // If not, you may need to install them: npm install @heroicons/react
 import {
   UserCircleIcon,
-  CurrencyRupeeIcon,
   PencilIcon,
   KeyIcon,
   ArrowLeftIcon,
@@ -33,18 +31,11 @@ const ProfilePage = () => {
     const allTabs = [
       { id: "info", name: "Account Information", icon: UserCircleIcon },
       {
-        id: "bids",
-        name: "Your Bids",
-        icon: CurrencyRupeeIcon,
+        id: "wallet",
+        name: "Wallet",
+        icon: CreditCardIcon,
         hideForAdmin: true,
         hideForVendor: true,
-      },
-      { 
-        id: "wallet", 
-        name: "Wallet", 
-        icon: CreditCardIcon, 
-        hideForAdmin: true,
-        hideForVendor: true 
       },
       { id: "edit", name: "Edit Profile", icon: PencilIcon },
       { id: "password", name: "Change Password", icon: KeyIcon },
@@ -59,13 +50,6 @@ const ProfilePage = () => {
 
   // Get filtered tabs based on user role
   const tabs = getTabs();
-
-  // Ensure active tab is valid in case it was hidden due to role change
-  useEffect(() => {
-    if (isAdmin && activeTab === "bids") {
-      setActiveTab("info");
-    }
-  }, [isAdmin, activeTab]);
 
   if (loading) {
     return (
@@ -294,9 +278,6 @@ const ProfilePage = () => {
             <div className="bg-white shadow-sm sm:rounded-lg overflow-hidden transition-all duration-300">
               <div className="p-6">
                 {activeTab === "info" && <UserInfo />}
-                {!isAdmin &&
-                  user?.role !== "vendor" &&
-                  activeTab === "bids" && <UserBids />}
                 {!isAdmin &&
                   user?.role !== "vendor" &&
                   activeTab === "wallet" && (

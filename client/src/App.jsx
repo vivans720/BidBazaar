@@ -36,63 +36,73 @@ const App = () => {
         <NotificationProvider>
           <LenisProvider>
             <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FAQPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/products" element={<ProductList />} />
-                <Route path="/products/:id" element={<ProductDetailPage />} />
-                <Route path="/debug" element={<TokenDebugger />} />
+              <Navbar />
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/products" element={<ProductList />} />
+                  <Route path="/products/:id" element={<ProductDetailPage />} />
+                  <Route path="/debug" element={<TokenDebugger />} />
 
-                {/* Protected routes for all authenticated users */}
-                <Route
-                  element={
-                    <PrivateRoute allowedRoles={["admin", "vendor", "buyer"]} />
-                  }
-                >
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/bids" element={<UserBidsPage />} />
-                  <Route path="/wallet" element={<WalletPage />} />
-                  <Route path="/notifications" element={<NotificationsPage />} />
+                  {/* Protected routes for all authenticated users */}
                   <Route
-                    path="/feedback/:productId"
-                    element={<FeedbackPage />}
-                  />
+                    element={
+                      <PrivateRoute
+                        allowedRoles={["admin", "vendor", "buyer"]}
+                      />
+                    }
+                  >
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/wallet" element={<WalletPage />} />
+                    <Route
+                      path="/notifications"
+                      element={<NotificationsPage />}
+                    />
+                    <Route
+                      path="/feedback/:productId"
+                      element={<FeedbackPage />}
+                    />
+                    <Route
+                      path="/feedback/submit/:productId"
+                      element={<FeedbackSubmissionPage />}
+                    />
+                    <Route path="/bids" element={<UserBidsPage />} />
+                  </Route>
+
+                  {/* Protected routes for vendors */}
+                  <Route element={<PrivateRoute allowedRoles={["vendor"]} />}>
+                    <Route
+                      path="/products/create"
+                      element={<CreateProduct />}
+                    />
+                  </Route>
+
+                  {/* Protected route for the dashboard - each role sees their specific dashboard */}
                   <Route
-                    path="/feedback/submit/:productId"
-                    element={<FeedbackSubmissionPage />}
+                    element={
+                      <PrivateRoute
+                        allowedRoles={["admin", "vendor", "buyer"]}
+                      />
+                    }
+                  >
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                  </Route>
+
+                  <Route
+                    path="*"
+                    element={
+                      <div className="text-center py-10">Page not found</div>
+                    }
                   />
-                </Route>
-
-                {/* Protected routes for vendors */}
-                <Route element={<PrivateRoute allowedRoles={["vendor"]} />}>
-                  <Route path="/products/create" element={<CreateProduct />} />
-                </Route>
-
-                {/* Protected route for the dashboard - each role sees their specific dashboard */}
-                <Route
-                  element={
-                    <PrivateRoute allowedRoles={["admin", "vendor", "buyer"]} />
-                  }
-                >
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                </Route>
-
-                <Route
-                  path="*"
-                  element={
-                    <div className="text-center py-10">Page not found</div>
-                  }
-                />
-              </Routes>
-            </main>
-            <Footer />
-            <ScrollToTopButton />
+                </Routes>
+              </main>
+              <Footer />
+              <ScrollToTopButton />
             </div>
             <ToastContainer position="top-right" autoClose={5000} />
           </LenisProvider>
