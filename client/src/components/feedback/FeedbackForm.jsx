@@ -5,9 +5,7 @@ import api from "../../utils/api";
 
 const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
   const [formData, setFormData] = useState({
-    productRating: 0,
     sellerRating: 0,
-    productComment: "",
     sellerComment: "",
     experienceTags: [],
     issues: [],
@@ -55,8 +53,8 @@ const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.productRating === 0 || formData.sellerRating === 0) {
-      setError("Please provide both product and seller ratings");
+    if (formData.sellerRating === 0) {
+      setError("Please provide a seller rating");
       return;
     }
 
@@ -67,8 +65,6 @@ const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
       await api.post(`/feedback`, {
         productId: product._id,
         winningBidId,
-        productRating: formData.productRating,
-        productReview: formData.productComment,
         sellerRating: formData.sellerRating,
         sellerReview: formData.sellerComment,
         experienceTags: formData.experienceTags,
@@ -77,7 +73,9 @@ const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
       onSubmit?.();
     } catch (error) {
       setError(
-        error.response?.data?.error || error.response?.data?.message || "Failed to submit feedback"
+        error.response?.data?.error ||
+          error.response?.data?.message ||
+          "Failed to submit feedback"
       );
     } finally {
       setLoading(false);
@@ -134,37 +132,6 @@ const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Product Rating */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Rate the Product
-          </h3>
-          <StarRating
-            rating={formData.productRating}
-            onRatingClick={(rating) =>
-              handleRatingClick("productRating", rating)
-            }
-            label="Product Quality"
-          />
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Comments
-            </label>
-            <textarea
-              value={formData.productComment}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  productComment: e.target.value,
-                }))
-              }
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Share your thoughts about the product..."
-            />
-          </div>
-        </div>
-
         {/* Seller Rating */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -246,11 +213,7 @@ const FeedbackForm = ({ product, winningBidId, onSubmit }) => {
         <div className="pt-6">
           <button
             type="submit"
-            disabled={
-              loading ||
-              formData.productRating === 0 ||
-              formData.sellerRating === 0
-            }
+            disabled={loading || formData.sellerRating === 0}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {loading ? (

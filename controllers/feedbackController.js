@@ -11,8 +11,6 @@ const submitFeedback = asyncHandler(async (req, res) => {
   const {
     productId,
     winningBidId,
-    productRating,
-    productReview,
     sellerRating,
     sellerReview,
     experienceTags,
@@ -25,8 +23,6 @@ const submitFeedback = asyncHandler(async (req, res) => {
   if (
     !productId ||
     !winningBidId ||
-    !productRating ||
-    !productReview ||
     !sellerRating ||
     !sellerReview ||
     wouldRecommend === undefined
@@ -38,15 +34,10 @@ const submitFeedback = asyncHandler(async (req, res) => {
   }
 
   // Validate rating values
-  if (
-    productRating < 1 ||
-    productRating > 5 ||
-    sellerRating < 1 ||
-    sellerRating > 5
-  ) {
+  if (sellerRating < 1 || sellerRating > 5) {
     return res.status(400).json({
       success: false,
-      error: "Ratings must be between 1 and 5",
+      error: "Seller rating must be between 1 and 5",
     });
   }
 
@@ -112,8 +103,6 @@ const submitFeedback = asyncHandler(async (req, res) => {
       buyer: req.user._id,
       seller: product.vendor._id,
       winningBid: winningBidId,
-      productRating: parseInt(productRating),
-      productReview: productReview.trim(),
       sellerRating: parseInt(sellerRating),
       sellerReview: sellerReview.trim(),
       experienceTags: experienceTags || [],
@@ -204,7 +193,7 @@ const getProductFeedback = asyncHandler(async (req, res) => {
 const getSellerFeedback = asyncHandler(async (req, res) => {
   try {
     console.log("Getting feedback for seller:", req.params.sellerId);
-    
+
     const {
       page = 1,
       limit = 10,
@@ -218,13 +207,17 @@ const getSellerFeedback = asyncHandler(async (req, res) => {
 
     // First, let's check if any feedback exists for this seller
     const allFeedback = await Feedback.find({ seller: req.params.sellerId });
-    console.log(`Found ${allFeedback.length} total feedback entries for seller`);
-    console.log("All feedback:", allFeedback.map(f => ({ 
-      id: f._id, 
-      status: f.status, 
-      productRating: f.productRating, 
-      sellerRating: f.sellerRating 
-    })));
+    console.log(
+      `Found ${allFeedback.length} total feedback entries for seller`
+    );
+    console.log(
+      "All feedback:",
+      allFeedback.map((f) => ({
+        id: f._id,
+        status: f.status,
+        sellerRating: f.sellerRating,
+      }))
+    );
 
     const feedback = await Feedback.find({
       seller: req.params.sellerId,
@@ -536,7 +529,6 @@ const getFeedbackStats = asyncHandler(async (req, res) => {
       {
         $group: {
           _id: null,
-          avgProductRating: { $avg: "$productRating" },
           avgSellerRating: { $avg: "$sellerRating" },
           avgDeliveryRating: { $avg: "$deliveryRating" },
           recommendationRate: { $avg: { $cond: ["$wouldRecommend", 1, 0] } },
@@ -553,7 +545,6 @@ const getFeedbackStats = asyncHandler(async (req, res) => {
         averageRatings.length > 0
           ? averageRatings[0]
           : {
-              avgProductRating: 0,
               avgSellerRating: 0,
               avgDeliveryRating: 0,
               recommendationRate: 0,

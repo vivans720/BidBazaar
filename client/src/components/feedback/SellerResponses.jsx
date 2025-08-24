@@ -148,18 +148,7 @@ const SellerResponses = () => {
             </div>
 
             {/* Ratings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  Product Rating:
-                </p>
-                <StarDisplay rating={feedback.productRating} />
-                {feedback.productComment && (
-                  <p className="text-gray-600 text-sm mt-2">
-                    {feedback.productComment}
-                  </p>
-                )}
-              </div>
+            <div className="mb-4">
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-1">
                   Seller Rating:
@@ -265,9 +254,7 @@ const SellerResponses = () => {
             )}
 
             {/* Alert for negative feedback */}
-            {(feedback.productRating <= 2 ||
-              feedback.sellerRating <= 2 ||
-              feedback.issues?.length > 0) && (
+            {(feedback.sellerRating <= 2 || feedback.issues?.length > 0) && (
               <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md flex items-start space-x-2">
                 <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                 <div>

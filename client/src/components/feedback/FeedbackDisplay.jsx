@@ -81,7 +81,6 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
       stats.overallRating ||
       // fallbacks
       stats.avgSellerRating ||
-      stats.avgProductRating ||
       0;
 
     return (
@@ -91,7 +90,7 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
         className="bg-white p-6 rounded-lg shadow-lg mb-6"
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {type === "product" ? "Product" : "Seller"} Ratings Overview
+          Seller Ratings Overview
         </h3>
         <div className="text-center">
           <div className="text-3xl font-bold text-blue-600">
@@ -110,9 +109,8 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
 
   const FeedbackItem = ({ item, index }) => {
     const isExpanded = expandedFeedback.has(item._id);
-    const rating = type === "product" ? item.productRating : item.sellerRating;
-    const comment =
-      type === "product" ? item.productReview : item.sellerReview;
+    const rating = item.sellerRating;
+    const comment = item.sellerReview;
 
     return (
       <motion.div
@@ -203,53 +201,7 @@ const FeedbackDisplay = ({ productId, sellerId, type = "product" }) => {
           </div>
         )}
 
-        {/* Show more details toggle */}
-        {(type === "product" && item.sellerReview) ||
-          (type === "seller" && item.productReview && (
-            <button
-              onClick={() => toggleExpanded(item._id)}
-              className="mt-3 flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="w-4 h-4" />
-                  <span>Show less</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-4 h-4" />
-                  <span>Show more details</span>
-                </>
-              )}
-            </button>
-          ))}
-
-        {/* Expanded details */}
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 pt-4 border-t border-gray-200"
-          >
-            {type === "product" && item.sellerReview && (
-              <div className="mb-3">
-                <h4 className="text-sm font-medium text-gray-900 mb-1">
-                  Seller Rating: <StarDisplay rating={item.sellerRating} />
-                </h4>
-                <p className="text-gray-700 text-sm">{item.sellerReview}</p>
-              </div>
-            )}
-            {type === "seller" && item.productReview && (
-              <div className="mb-3">
-                <h4 className="text-sm font-medium text-gray-900 mb-1">
-                  Product Rating: <StarDisplay rating={item.productRating} />
-                </h4>
-                <p className="text-gray-700 text-sm">{item.productReview}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
+        {/* Show more details toggle - removed since no additional details needed */}
       </motion.div>
     );
   };

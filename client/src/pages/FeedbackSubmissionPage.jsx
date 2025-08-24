@@ -27,8 +27,6 @@ const FeedbackSubmissionPage = () => {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
-    productRating: 0,
-    productComment: "",
     sellerRating: 0,
     sellerComment: "",
     experienceTags: [],
@@ -68,11 +66,13 @@ const FeedbackSubmissionPage = () => {
   const fetchProductAndBid = async () => {
     try {
       setLoading(true);
-      const [productResponse, bidResponse, pendingResponse] = await Promise.all([
-        api.get(`/products/${productId}`),
-        bidId ? api.get(`/bids/${bidId}`) : Promise.resolve(null),
-        api.get(`/feedback/my/pending`),
-      ]);
+      const [productResponse, bidResponse, pendingResponse] = await Promise.all(
+        [
+          api.get(`/products/${productId}`),
+          bidId ? api.get(`/bids/${bidId}`) : Promise.resolve(null),
+          api.get(`/feedback/my/pending`),
+        ]
+      );
 
       setProduct(productResponse.data.data);
       if (bidResponse) {
@@ -120,13 +120,13 @@ const FeedbackSubmissionPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.productRating === 0 || formData.sellerRating === 0) {
-      toast.error("Please provide both product and seller ratings");
+    if (formData.sellerRating === 0) {
+      toast.error("Please provide a seller rating");
       return;
     }
 
-    if (!formData.productComment.trim() || !formData.sellerComment.trim()) {
-      toast.error("Please provide comments for both product and seller");
+    if (!formData.sellerComment.trim()) {
+      toast.error("Please provide a comment for the seller");
       return;
     }
 
@@ -136,8 +136,6 @@ const FeedbackSubmissionPage = () => {
       await api.post("/feedback", {
         productId: product._id,
         winningBidId: bid?._id || bidId,
-        productRating: formData.productRating,
-        productReview: formData.productComment,
         sellerRating: formData.sellerRating,
         sellerReview: formData.sellerComment,
         experienceTags: formData.experienceTags,
@@ -292,42 +290,6 @@ const FeedbackSubmissionPage = () => {
           onSubmit={handleSubmit}
           className="bg-white rounded-lg shadow-md p-6 space-y-8"
         >
-          {/* Product Rating Section */}
-          <div className="border-b border-gray-200 pb-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <ShoppingBagIcon className="w-6 h-6 mr-2 text-blue-600" />
-              Rate the Product
-            </h3>
-
-            <StarRating
-              rating={formData.productRating}
-              onRatingClick={(rating) =>
-                handleRatingClick("productRating", rating)
-              }
-              label="Product Quality"
-              size="large"
-            />
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Product Review
-              </label>
-              <textarea
-                value={formData.productComment}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    productComment: e.target.value,
-                  }))
-                }
-                rows={4}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="How was the product quality, appearance, and overall value?"
-              />
-            </div>
-          </div>
-
           {/* Seller Rating Section */}
           <div className="border-b border-gray-200 pb-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -458,11 +420,7 @@ const FeedbackSubmissionPage = () => {
             </button>
             <button
               type="submit"
-              disabled={
-                submitting ||
-                formData.productRating === 0 ||
-                formData.sellerRating === 0
-              }
+              disabled={submitting || formData.sellerRating === 0}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
             >
               {submitting ? (

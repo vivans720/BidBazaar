@@ -26,7 +26,7 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
     try {
       setLoading(true);
       console.log("Fetching feedback for seller:", sellerId);
-      
+
       const [statsResponse, feedbackResponse] = await Promise.all([
         api.get(`/feedback/seller/${sellerId}?limit=1`), // Just get stats
         api.get(`/feedback/seller/${sellerId}?limit=5`), // Get recent feedback
@@ -40,23 +40,21 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
       setFeedbackStats({
         totalFeedbacks: stats.totalFeedbacks || 0,
         averageSellerRating: stats.averageSellerRating || 0,
-        averageProductRating: stats.averageProductRating || 0,
         recommendationRate: stats.recommendationRate || 0,
-        ...stats
+        ...stats,
       });
-      
+
       // Safely set feedback array
       setRecentFeedback(feedbackResponse.data?.data?.feedback || []);
     } catch (error) {
       console.error("Error fetching seller feedback:", error);
       console.error("Error details:", error.response?.data || error.message);
-      
+
       // Set safe default state on error
       setFeedbackStats({
         totalFeedbacks: 0,
         averageSellerRating: 0,
-        averageProductRating: 0,
-        recommendationRate: 0
+        recommendationRate: 0,
       });
       setRecentFeedback([]);
     } finally {
@@ -106,7 +104,11 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
     );
   }
 
-  if (!feedbackStats || !feedbackStats.totalFeedbacks || feedbackStats.totalFeedbacks === 0) {
+  if (
+    !feedbackStats ||
+    !feedbackStats.totalFeedbacks ||
+    feedbackStats.totalFeedbacks === 0
+  ) {
     return (
       <div className="bg-gray-50 rounded-lg p-6 text-center">
         <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -117,7 +119,8 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
           You haven't received any customer feedback yet.
         </p>
         <p className="text-sm text-gray-500">
-          Complete your first sale to start receiving customer feedback and build your seller reputation.
+          Complete your first sale to start receiving customer feedback and
+          build your seller reputation.
         </p>
       </div>
     );
@@ -142,7 +145,7 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
   return (
     <div className="space-y-6">
       {/* Feedback Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,44 +185,6 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`rounded-lg p-4 border-2 ${getRatingBgColor(
-            feedbackStats.averageProductRating
-          )}`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Product Rating
-              </p>
-              <div className="mt-1">
-                <StarDisplay
-                  rating={feedbackStats.averageProductRating}
-                  size="medium"
-                />
-              </div>
-            </div>
-            <div
-              className={`rounded-full p-2 ${
-                feedbackStats.averageProductRating >= 4.5
-                  ? "bg-green-100"
-                  : "bg-yellow-100"
-              }`}
-            >
-              <ChartBarIcon
-                className={`h-6 w-6 ${
-                  feedbackStats.averageProductRating >= 4.5
-                    ? "text-green-600"
-                    : "text-yellow-600"
-                }`}
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
           className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4"
         >
           <div className="flex items-center justify-between">
@@ -229,7 +194,8 @@ const SellerFeedbackDashboard = ({ sellerId }) => {
                 {feedbackStats?.totalFeedbacks || 0}
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                {Math.round((feedbackStats?.recommendationRate || 0) * 100)}% recommend
+                {Math.round((feedbackStats?.recommendationRate || 0) * 100)}%
+                recommend
               </p>
             </div>
             <div className="bg-blue-100 rounded-full p-2">

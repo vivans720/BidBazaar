@@ -30,26 +30,7 @@ const feedbackSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Product-specific feedback
-    productRating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-      validate: {
-        validator: function (v) {
-          return Number.isInteger(v);
-        },
-        message: "Product rating must be a whole number between 1 and 5",
-      },
-    },
-
-    productReview: {
-      type: String,
-      required: true,
-      maxlength: [1000, "Product review cannot exceed 1000 characters"],
-      trim: true,
-    },
+    // Product-specific feedback removed - only seller reviews supported
 
     // Seller-specific feedback
     sellerRating: {
@@ -181,12 +162,12 @@ feedbackSchema.index({ product: 1, buyer: 1 }, { unique: true });
 feedbackSchema.index({ seller: 1, status: 1, createdAt: -1 });
 feedbackSchema.index({ product: 1, status: 1 });
 feedbackSchema.index({ buyer: 1, createdAt: -1 });
-feedbackSchema.index({ productRating: 1, sellerRating: 1 });
+feedbackSchema.index({ sellerRating: 1 });
 feedbackSchema.index({ isVerified: 1, status: 1 });
 
-// Virtual for overall rating (average of product and seller ratings)
+// Virtual for overall rating (based on seller rating only)
 feedbackSchema.virtual("overallRating").get(function () {
-  return Math.round(((this.productRating + this.sellerRating) / 2) * 10) / 10;
+  return this.sellerRating;
 });
 
 // Pre-save middleware to ensure only winners can leave feedback
@@ -236,7 +217,6 @@ feedbackSchema.statics.getSellerStats = async function (sellerId) {
       $group: {
         _id: null,
         totalFeedbacks: { $sum: 1 },
-        averageProductRating: { $avg: "$productRating" },
         averageSellerRating: { $avg: "$sellerRating" },
         averageDeliveryRating: { $avg: "$deliveryRating" },
         recommendationRate: {
@@ -244,7 +224,6 @@ feedbackSchema.statics.getSellerStats = async function (sellerId) {
         },
         ratingDistribution: {
           $push: {
-            productRating: "$productRating",
             sellerRating: "$sellerRating",
           },
         },
@@ -255,7 +234,6 @@ feedbackSchema.statics.getSellerStats = async function (sellerId) {
   if (stats.length === 0) {
     return {
       totalFeedbacks: 0,
-      averageProductRating: 0,
       averageSellerRating: 0,
       averageDeliveryRating: 0,
       recommendationRate: 0,
@@ -264,15 +242,12 @@ feedbackSchema.statics.getSellerStats = async function (sellerId) {
   }
 
   const result = stats[0];
-  result.overallRating =
-    Math.round(
-      ((result.averageProductRating + result.averageSellerRating) / 2) * 10
-    ) / 10;
+  result.overallRating = result.averageSellerRating;
 
   return result;
 };
 
-// Static method to get product feedback summary
+// Static method to get product feedback summary (now only shows seller ratings)
 feedbackSchema.statics.getProductStats = async function (productId) {
   const stats = await this.aggregate([
     {
@@ -285,11 +260,8 @@ feedbackSchema.statics.getProductStats = async function (productId) {
       $group: {
         _id: null,
         totalFeedbacks: { $sum: 1 },
-        averageProductRating: { $avg: "$productRating" },
         averageSellerRating: { $avg: "$sellerRating" },
-        averageOverallRating: {
-          $avg: { $divide: [{ $add: ["$productRating", "$sellerRating"] }, 2] },
-        },
+        averageOverallRating: { $avg: "$sellerRating" },
       },
     },
   ]);
@@ -298,7 +270,6 @@ feedbackSchema.statics.getProductStats = async function (productId) {
     ? stats[0]
     : {
         totalFeedbacks: 0,
-        averageProductRating: 0,
         averageSellerRating: 0,
         averageOverallRating: 0,
       };
