@@ -17,14 +17,42 @@ exports.sendContactEmail = async (req, res) => {
   const { name, email, subject, message, category } = req.body;
 
   try {
-    // Create transporter using Gmail SMTP
+    // Verify SMTP configuration before attempting to send
+    console.log("SMTP Configuration:", {
+      user: process.env.EMAIL_USER ? "✓ Set" : "✗ Missing",
+      pass: process.env.EMAIL_PASS ? "✓ Set" : "✗ Missing",
+      host: "smtp.gmail.com",
+      port: 587,
+    });
+
+    // Create transporter using Gmail SMTP with increased timeout
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587, // or 465 for SSL
+      secure: false, // true for 465, false for 587
       auth: {
         user: process.env.EMAIL_USER, // Your Gmail address
         pass: process.env.EMAIL_PASS, // Your Gmail app password
       },
+      // Increase timeout and add connection options
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000, // 30 seconds
+      socketTimeout: 60000, // 60 seconds
+      // Add pool and rate limiting for better connection handling
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 10,
+      // Add TLS options
+      tls: {
+        rejectUnauthorized: true,
+        minVersion: "TLSv1.2",
+      },
     });
+
+    // Verify connection before sending
+    console.log("Verifying SMTP connection...");
+    await transporter.verify();
+    console.log("SMTP connection verified successfully");
 
     // Email content to you (the admin)
     const adminMailOptions = {
@@ -107,10 +135,12 @@ exports.sendContactEmail = async (req, res) => {
     };
 
     // Send both emails
+    console.log("Sending emails...");
     await Promise.all([
       transporter.sendMail(adminMailOptions),
       transporter.sendMail(confirmationMailOptions),
     ]);
+    console.log("Emails sent successfully");
 
     res.status(200).json({
       success: true,
@@ -118,9 +148,28 @@ exports.sendContactEmail = async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending email:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      stack: error.stack,
+    });
+
+    // Provide more specific error messages
+    let errorMessage = "Failed to send message. Please try again later.";
+
+    if (error.code === "ETIMEDOUT") {
+      errorMessage =
+        "Email service connection timeout. Please try again in a moment.";
+    } else if (error.code === "EAUTH") {
+      errorMessage = "Email authentication failed. Please contact support.";
+    } else if (error.code === "ECONNECTION") {
+      errorMessage = "Could not connect to email service. Please try again.";
+    }
+
     res.status(500).json({
       success: false,
-      error: "Failed to send message. Please try again later.",
+      error: errorMessage,
     });
   }
 };

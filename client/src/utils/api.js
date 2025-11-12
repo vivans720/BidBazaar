@@ -10,7 +10,7 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true,
-  timeout: 10000, // 10 second timeout for all requests
+  timeout: 70000, // 70 second timeout (increased for email sending)
 });
 
 // Add a request interceptor
