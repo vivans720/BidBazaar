@@ -14,11 +14,13 @@ exports.createProduct = async (req, res) => {
     // Add vendor to req.body
     req.body.vendor = req.user.id;
 
-    // Calculate end time
+    // Set placeholder times - will be recalculated when admin approves
+    // Product starts in 'pending' status, auction timer starts only after admin approval
     const startTime = new Date();
     const endTime = new Date(
-      startTime.getTime() + req.body.duration * 60 * 60 * 1000
+      startTime.getTime() + req.body.duration * 60 * 1000
     );
+    req.body.startTime = startTime;
     req.body.endTime = endTime;
 
     const product = await Product.create(req.body);
@@ -26,6 +28,8 @@ exports.createProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       data: product,
+      message:
+        "Product submitted for admin review. Auction will start after approval.",
     });
   } catch (error) {
     res.status(500).json({
@@ -205,7 +209,9 @@ exports.getProduct = async (req, res) => {
               await loserWallet.addFunds(
                 refundAmount,
                 "bid_refund",
-                `Bid refund for ended auction: ${product.title || product.name}`,
+                `Bid refund for ended auction: ${
+                  product.title || product.name
+                }`,
                 losingBid._id,
                 product._id
               );
@@ -456,6 +462,16 @@ exports.reviewProduct = async (req, res) => {
       product.adminRemarks = adminRemarks;
     }
 
+    // If product is approved (active), start the auction timer now
+    if (status === "active") {
+      const startTime = new Date();
+      const endTime = new Date(
+        startTime.getTime() + product.duration * 60 * 1000
+      );
+      product.startTime = startTime;
+      product.endTime = endTime;
+    }
+
     await product.save();
 
     res.status(200).json({
@@ -476,13 +492,13 @@ exports.reviewProduct = async (req, res) => {
 exports.relistProduct = async (req, res) => {
   try {
     const { startingPrice, duration } = req.body;
-    
+
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found"
+        error: "Product not found",
       });
     }
 
@@ -490,7 +506,7 @@ exports.relistProduct = async (req, res) => {
     if (product.vendor.toString() !== req.user.id) {
       return res.status(401).json({
         success: false,
-        error: "Not authorized to relist this product"
+        error: "Not authorized to relist this product",
       });
     }
 
@@ -498,14 +514,16 @@ exports.relistProduct = async (req, res) => {
     if (product.status !== "ended" || product.winner) {
       return res.status(400).json({
         success: false,
-        error: "Only unsold products can be relisted"
+        error: "Only unsold products can be relisted",
       });
     }
 
     // Calculate recommended price based on previous auction data
     const Bid = require("../models/bidModel");
-    const previousBids = await Bid.find({ product: product._id }).sort({ amount: -1 });
-    
+    const previousBids = await Bid.find({ product: product._id }).sort({
+      amount: -1,
+    });
+
     let recommendedPrice = product.startingPrice;
     if (previousBids.length > 0) {
       // If there were bids, recommend 10-20% lower than the highest bid
@@ -527,12 +545,15 @@ exports.relistProduct = async (req, res) => {
       startingPrice: startingPrice || recommendedPrice,
       duration: duration || product.duration,
       images: product.images,
-      vendor: product.vendor
+      vendor: product.vendor,
     };
 
-    // Calculate new end time
+    // Set placeholder times - will be recalculated when admin approves
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + newProduct.duration * 60 * 60 * 1000);
+    const endTime = new Date(
+      startTime.getTime() + newProduct.duration * 60 * 1000
+    );
+    newProduct.startTime = startTime;
     newProduct.endTime = endTime;
 
     const relistedProduct = await Product.create(newProduct);
@@ -541,12 +562,12 @@ exports.relistProduct = async (req, res) => {
       success: true,
       data: relistedProduct,
       recommendedPrice,
-      message: "Product relisted successfully"
+      message: "Product relisted and submitted for admin review",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -557,11 +578,11 @@ exports.relistProduct = async (req, res) => {
 exports.removeUnsoldProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found"
+        error: "Product not found",
       });
     }
 
@@ -569,7 +590,7 @@ exports.removeUnsoldProduct = async (req, res) => {
     if (product.vendor.toString() !== req.user.id) {
       return res.status(401).json({
         success: false,
-        error: "Not authorized to remove this product"
+        error: "Not authorized to remove this product",
       });
     }
 
@@ -577,7 +598,7 @@ exports.removeUnsoldProduct = async (req, res) => {
     if (product.status !== "ended" || product.winner) {
       return res.status(400).json({
         success: false,
-        error: "Only unsold products can be removed"
+        error: "Only unsold products can be removed",
       });
     }
 
@@ -585,12 +606,12 @@ exports.removeUnsoldProduct = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Product removed successfully"
+      message: "Product removed successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -601,11 +622,11 @@ exports.removeUnsoldProduct = async (req, res) => {
 exports.getPriceRecommendation = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found"
+        error: "Product not found",
       });
     }
 
@@ -613,7 +634,7 @@ exports.getPriceRecommendation = async (req, res) => {
     if (product.vendor.toString() !== req.user.id) {
       return res.status(401).json({
         success: false,
-        error: "Not authorized to access this product"
+        error: "Not authorized to access this product",
       });
     }
 
@@ -621,30 +642,39 @@ exports.getPriceRecommendation = async (req, res) => {
     if (product.status !== "ended" || product.winner) {
       return res.status(400).json({
         success: false,
-        error: "Only unsold products can be relisted"
+        error: "Only unsold products can be relisted",
       });
     }
 
     // Calculate recommended price based on previous auction data
     const Bid = require("../models/bidModel");
-    const previousBids = await Bid.find({ product: product._id }).sort({ amount: -1 });
-    
+    const previousBids = await Bid.find({ product: product._id }).sort({
+      amount: -1,
+    });
+
     let recommendedPrice = product.startingPrice;
     let recommendationReason = "";
-    
+
     if (previousBids.length > 0) {
       const highestBid = previousBids[0].amount;
-      const averageBid = previousBids.reduce((sum, bid) => sum + bid.amount, 0) / previousBids.length;
-      
+      const averageBid =
+        previousBids.reduce((sum, bid) => sum + bid.amount, 0) /
+        previousBids.length;
+
       recommendedPrice = Math.max(
         Math.round(highestBid * 0.8), // 20% lower than highest bid
         Math.round(product.startingPrice * 0.9) // But not lower than 90% of original price
       );
-      
-      recommendationReason = `Based on ${previousBids.length} previous bids. Highest bid was ₹${highestBid}, average was ₹${Math.round(averageBid)}.`;
+
+      recommendationReason = `Based on ${
+        previousBids.length
+      } previous bids. Highest bid was ₹${highestBid}, average was ₹${Math.round(
+        averageBid
+      )}.`;
     } else {
       recommendedPrice = Math.round(product.startingPrice * 0.85);
-      recommendationReason = "No bids received. Recommending 15% lower than original price to attract more interest.";
+      recommendationReason =
+        "No bids received. Recommending 15% lower than original price to attract more interest.";
     }
 
     res.status(200).json({
@@ -653,13 +683,13 @@ exports.getPriceRecommendation = async (req, res) => {
         originalPrice: product.startingPrice,
         recommendedPrice,
         recommendationReason,
-        previousBidsCount: previousBids.length
-      }
+        previousBidsCount: previousBids.length,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -729,7 +759,9 @@ const updateExpiredAuctions = async (productsToCheck) => {
             });
 
             for (const losingBid of losingBids) {
-              let loserWallet = await Wallet.findOne({ user: losingBid.bidder });
+              let loserWallet = await Wallet.findOne({
+                user: losingBid.bidder,
+              });
               if (!loserWallet) {
                 loserWallet = await Wallet.create({
                   user: losingBid.bidder,
@@ -991,42 +1023,42 @@ exports.getProductStats = async (req, res) => {
 
     // Get active auctions count
     const activeAuctions = await Product.countDocuments({
-      status: 'active'
+      status: "active",
     });
 
     // Get ended auctions count
     const endedAuctions = await Product.countDocuments({
-      status: 'ended'
+      status: "ended",
     });
 
     // Get pending products count
     const pendingProducts = await Product.countDocuments({
-      status: 'pending'
+      status: "pending",
     });
 
     // Get products with winners (successful auctions)
     const successfulAuctions = await Product.countDocuments({
-      status: 'ended',
-      winner: { $exists: true, $ne: null }
+      status: "ended",
+      winner: { $exists: true, $ne: null },
     });
 
     // Get category distribution
     const categoryStats = await Product.aggregate([
-      { $match: { status: { $ne: 'rejected' } } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
+      { $match: { status: { $ne: "rejected" } } },
+      { $group: { _id: "$category", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
     ]);
 
     // Get total users count (vendors and buyers)
-    const User = require('../models/userModel');
-    const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
-    const totalVendors = await User.countDocuments({ role: 'vendor' });
-    const totalBuyers = await User.countDocuments({ role: 'buyer' });
+    const User = require("../models/userModel");
+    const totalUsers = await User.countDocuments({ role: { $ne: "admin" } });
+    const totalVendors = await User.countDocuments({ role: "vendor" });
+    const totalBuyers = await User.countDocuments({ role: "buyer" });
 
     // Get average auction duration for active auctions
     const avgDuration = await Product.aggregate([
-      { $match: { status: 'active' } },
-      { $group: { _id: null, avgDuration: { $avg: '$duration' } } }
+      { $match: { status: "active" } },
+      { $group: { _id: null, avgDuration: { $avg: "$duration" } } },
     ]);
 
     res.status(200).json({
@@ -1041,16 +1073,17 @@ exports.getProductStats = async (req, res) => {
         users: {
           total: totalUsers,
           vendors: totalVendors,
-          buyers: totalBuyers
+          buyers: totalBuyers,
         },
-        averageDuration: avgDuration.length > 0 ? Math.round(avgDuration[0].avgDuration) : 24
-      }
+        averageDuration:
+          avgDuration.length > 0 ? Math.round(avgDuration[0].avgDuration) : 24,
+      },
     });
   } catch (error) {
-    console.error('Error fetching product stats:', error);
+    console.error("Error fetching product stats:", error);
     res.status(500).json({
       success: false,
-      error: 'Server Error'
+      error: "Server Error",
     });
   }
 };
