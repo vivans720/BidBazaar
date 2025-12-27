@@ -212,36 +212,4 @@ BidBazaar/
 └── README.md
 ```
 
-## 🔑 Key Features Explained
-
-### 💳 Wallet System
-The integrated wallet system ensures secure and transparent financial transactions:
-- Users deposit money using various payment methods
-- Bid amounts are immediately deducted from wallet balance
-- Automatic refunds when outbid by other users
-- Winners keep their final bid amount deducted (no additional charges)
-- Complete transaction audit trail
-
-### 📈 Smart Bidding
-The bidding system is designed for fairness and efficiency:
-- **Incremental Charging**: When you increase your bid from ₹500 to ₹600, only ₹100 is deducted
-- **Automatic Refunds**: Previous bidders get immediate refunds when outbid
-- **Balance Protection**: Cannot bid more than available wallet balance
-- **Real-time Updates**: Instant bid updates across all users
-
-### 🎨 Modern UI/UX
-- **Responsive design** that works on all devices
-- **Clean, intuitive interface** with Tailwind CSS
-- **Smooth animations** with Framer Motion
-- **Toast notifications** for user feedback
-- **Loading states** and error handling
-
-## 🔒 Security Features
-
-- **JWT authentication** with secure token handling
-- **Password hashing** with bcryptjs
-- **File upload validation** with size and type restrictions
-- **Role-based access control** for API endpoints
-- **Input validation** and sanitization
-- **CORS protection** for cross-origin requests
 
