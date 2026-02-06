@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 package-lock.json
+**/package-lock.json
 
 # Environment variables
 .env
@@ -15,22 +16,47 @@ package-lock.json
 
 # Temporary files
 tmp/
+*.tmp
+
+# User uploads (should be stored in cloud storage like Cloudinary)
+uploads/
+**/uploads/
 
 # Logs
 logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+.project
+.classpath
+.settings/
 
 # Build outputs
 dist/
 build/
+.next/
+out/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Documentation (optional - uncomment to ignore internal notes)
+# *_FIX.md
+# *_SUMMARY.md
+# *_INTEGRATION.md
